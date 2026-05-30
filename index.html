@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Partage d'écran</title>
+<title>TS Live Stream</title>
 <style>
   :root {
     --bg: #eceaf4;
@@ -183,17 +183,66 @@
   .msg.system { align-self: center; color: var(--muted); font-size: 12px; font-style: italic; max-width: 100%; }
   .chat-input { display: flex; gap: 8px; padding: 14px; border-top: 1px solid var(--border); }
   .chat-input input { margin: 0; border-radius: 999px; }
+
+  /* ===== Logo / marque ===== */
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo-badge { display: block; flex: none; }
+  .header-logo { width: 40px; height: 40px; }
+  .wordmark { font-size: 19px; font-weight: 800; letter-spacing: .6px; color: #fff; white-space: nowrap; }
+  .wordmark .live { color: #ff5470; }
+  header .dot { margin-left: auto; }
+  @keyframes livepulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .3; transform: scale(.7); } }
+  .live-dot { animation: livepulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  .join-logo { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 26px; }
+  .join-logo .logo-badge { width: 78px; height: 78px; }
+  .join-logo .name { font-size: 22px; font-weight: 800; letter-spacing: .6px; color: var(--text); }
+  .join-logo .name .live { color: #ef3e57; }
 </style>
 </head>
 <body>
 <header>
-  <span class="dot" id="conn-dot"></span>
-  <h1>Partage d'écran</h1>
+  <div class="brand">
+    <svg class="logo-badge header-logo" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="TS Live Stream">
+      <defs>
+        <linearGradient id="tsHead" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#7b3ff2" />
+          <stop offset="1" stop-color="#4f1fb0" />
+        </linearGradient>
+      </defs>
+      <rect x="3" y="3" width="58" height="58" rx="17" fill="#fff" />
+      <text x="29" y="45" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="33" fill="url(#tsHead)">TS</text>
+      <g fill="none" stroke="#ff4b63" stroke-width="3" stroke-linecap="round">
+        <path d="M43 23 a9 9 0 0 1 9 9" />
+        <path d="M43 16 a16 16 0 0 1 16 16" />
+      </g>
+      <circle class="live-dot" cx="44" cy="32" r="3.4" fill="#ff4b63" />
+    </svg>
+    <span class="wordmark">TS&nbsp;<span class="live">Live</span>&nbsp;Stream</span>
+  </div>
+  <span class="dot" id="conn-dot" title="État de la connexion"></span>
 </header>
 
 <main>
   <!-- Écran d'accueil -->
   <section class="join" id="join-screen">
+    <div class="join-logo">
+      <svg class="logo-badge" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="TS Live Stream">
+        <defs>
+          <linearGradient id="tsJoin" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#9d5cf5" />
+            <stop offset="1" stop-color="#6d28d9" />
+          </linearGradient>
+        </defs>
+        <rect x="3" y="3" width="58" height="58" rx="17" fill="url(#tsJoin)" />
+        <text x="29" y="45" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="33" fill="#fff">TS</text>
+        <g fill="none" stroke="#ff5470" stroke-width="3" stroke-linecap="round">
+          <path d="M43 23 a9 9 0 0 1 9 9" />
+          <path d="M43 16 a16 16 0 0 1 16 16" />
+        </g>
+        <circle class="live-dot" cx="44" cy="32" r="3.4" fill="#ff5470" />
+      </svg>
+      <span class="name">TS <span class="live">Live</span> Stream</span>
+    </div>
     <h2>Rejoindre une session</h2>
     <p>Choisissez un nom de salon et partagez-le avec les autres participants. Tous ceux qui entrent dans le même salon peuvent se voir, se parler et discuter.</p>
     <label for="name-input">Votre nom</label>
