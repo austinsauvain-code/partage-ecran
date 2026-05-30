@@ -442,9 +442,7 @@
 
     // Une fois la connexion établie, on (ré)applique le réglage haute qualité vidéo.
     pc.addEventListener("connectionstatechange", () => {
-      if (pc.connectionState === "connected" && screenStream) {
-        screenStream.getVideoTracks().forEach((t) => boostVideoSender(pc, t));
-      }
+      if (pc.connectionState === "connected") applyQuality(pc);
     });
 
     // Ajoute les pistes locales déjà actives (micro / écran) vers ce nouveau pair
@@ -456,6 +454,7 @@
     if (micStream) {
       micStream.getAudioTracks().forEach((t) => {
         if (!pc.getSenders().some((s) => s.track === t)) pc.addTrack(t, micStream);
+        boostAudioSender(pc, t);
       });
     }
     if (screenStream) {
@@ -463,23 +462,48 @@
       screenStream.getTracks().forEach((t) => {
         if (!pc.getSenders().some((s) => s.track === t)) pc.addTrack(t, screenStream);
         if (t.kind === "video") boostVideoSender(pc, t);
+        else boostAudioSender(pc, t);
       });
     }
   }
 
-  // Augmente la qualité de la vidéo partagée : débit élevé + on garde la résolution
-  // (au lieu de la baisser, ce qui rend l'image floue) en cas de charge réseau/CPU.
+  // Vidéo : débit élevé, et on PRIVILÉGIE LA FLUIDITÉ (on garde les images/seconde,
+  // quitte à baisser un peu la définition si le réseau fatigue) — idéal pour le sport.
   async function boostVideoSender(pc, track) {
     const sender = pc.getSenders().find((s) => s.track === track);
     if (!sender) return;
     try {
       const params = sender.getParameters();
       if (!params.encodings || !params.encodings.length) params.encodings = [{}];
-      params.encodings[0].maxBitrate = 8000000;   // ~8 Mbps : image nette
+      params.encodings[0].maxBitrate = 8000000;   // ~8 Mbps
       params.encodings[0].maxFramerate = 30;
-      params.degradationPreference = "maintain-resolution";
+      params.degradationPreference = "maintain-framerate"; // fluidité prioritaire
       await sender.setParameters(params);
     } catch (e) { /* certains navigateurs exigent une négo préalable : sans gravité */ }
+  }
+
+  // Audio : on le protège (débit stéréo stable + priorité réseau haute) pour qu'il
+  // ne baisse pas / ne se dégrade pas quand la vidéo consomme de la bande passante.
+  async function boostAudioSender(pc, track) {
+    const sender = pc.getSenders().find((s) => s.track === track);
+    if (!sender) return;
+    try {
+      const params = sender.getParameters();
+      if (!params.encodings || !params.encodings.length) params.encodings = [{}];
+      params.encodings[0].maxBitrate = 256000;
+      params.encodings[0].priority = "high";
+      params.encodings[0].networkPriority = "high";
+      await sender.setParameters(params);
+    } catch (e) { /* sans gravité */ }
+  }
+
+  // (Ré)applique tous les réglages de qualité sur une connexion donnée.
+  function applyQuality(pc) {
+    if (screenStream) {
+      screenStream.getVideoTracks().forEach((t) => boostVideoSender(pc, t));
+      screenStream.getAudioTracks().forEach((t) => boostAudioSender(pc, t));
+    }
+    if (micStream) micStream.getAudioTracks().forEach((t) => boostAudioSender(pc, t));
   }
 
   function closePeer(peerId) {
@@ -572,10 +596,11 @@
           sampleRate: 48000
         }
       });
-      // 'detail' indique à l'encodeur de privilégier la netteté (résolution) plutôt
-      // que la fluidité — essentiel pour ne pas avoir une image floue.
+      // 'motion' indique à l'encodeur de privilégier la fluidité (images/seconde),
+      // important pour du sport/vidéo : on garde le mouvement net plutôt qu'une
+      // image figée plus définie mais saccadée.
       const vTrack = screenStream.getVideoTracks()[0];
-      if (vTrack && "contentHint" in vTrack) vTrack.contentHint = "detail";
+      if (vTrack && "contentHint" in vTrack) vTrack.contentHint = "motion";
     } catch (e) {
       setStatus("Partage annulé ou refusé.");
       return;
