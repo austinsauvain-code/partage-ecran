@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Partage d'écran</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #1a1d24;
+    --border: #2a2f3a;
+    --text: #e7e9ee;
+    --muted: #9aa3b2;
+    --accent: #4f8cff;
+    --accent-h: #6ea0ff;
+    --danger: #ff5d5d;
+    --ok: #3ecf8e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .dot.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+  .join {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    max-width: 460px;
+    margin: 40px auto;
+  }
+  .join h2 { margin: 0 0 6px; font-size: 20px; }
+  .join p { margin: 0 0 22px; color: var(--muted); font-size: 14px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  input {
+    width: 100%;
+    padding: 12px 14px;
+    background: #11141a;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 15px;
+    margin-bottom: 16px;
+  }
+  input:focus { outline: none; border-color: var(--accent); }
+  button {
+    border: none;
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, opacity .15s;
+  }
+  .btn-primary { background: var(--accent); color: white; width: 100%; }
+  .btn-primary:hover { background: var(--accent-h); }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .room-pill {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .room-pill b { color: var(--text); }
+  .spacer { flex: 1; }
+
+  .video-wrap {
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 16 / 9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+  .placeholder {
+    color: var(--muted);
+    text-align: center;
+    padding: 24px;
+    font-size: 15px;
+  }
+  .badge {
+    position: absolute;
+    top: 12px; left: 12px;
+    background: rgba(0,0,0,.6);
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .hidden { display: none !important; }
+  .status { font-size: 13px; color: var(--muted); margin-top: 14px; min-height: 18px; }
+  .copy { cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="conn-dot"></span>
+  <h1>Partage d'écran</h1>
+</header>
+
+<main>
+  <!-- Écran d'accueil : rejoindre une room -->
+  <section class="join" id="join-screen">
+    <h2>Rejoindre une session</h2>
+    <p>Entrez un nom de salon. Partagez ce même nom avec la personne qui doit voir votre écran (ou inversement).</p>
+    <label for="room-input">Nom du salon</label>
+    <input id="room-input" placeholder="ex : reunion-mardi" autocomplete="off" />
+    <button class="btn-primary" id="join-btn">Entrer dans le salon</button>
+  </section>
+
+  <!-- Écran de session -->
+  <section id="room-screen" class="hidden">
+    <div class="toolbar">
+      <span class="room-pill">Salon : <b id="room-name"></b></span>
+      <span class="room-pill" id="peers-pill">0 participant connecté</span>
+      <span class="spacer"></span>
+      <button class="btn-primary" id="share-btn" style="width:auto">Partager mon écran</button>
+      <button class="btn-danger hidden" id="stop-btn">Arrêter le partage</button>
+      <button class="btn-ghost" id="leave-btn">Quitter</button>
+    </div>
+
+    <div class="video-wrap">
+      <span class="badge hidden" id="video-badge"></span>
+      <div class="placeholder" id="placeholder">
+        Aucun écran partagé pour le moment.<br />
+        Cliquez sur « Partager mon écran », ou attendez qu'un participant partage le sien.
+      </div>
+      <video id="video" autoplay playsinline class="hidden"></video>
+    </div>
+
+    <div class="status" id="status">
+      Lien à partager : <span class="copy" id="share-link">copier le lien du salon</span>
+    </div>
+  </section>
+</main>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // --- Config WebRTC : serveurs STUN publics pour traverser les NAT ---
+  const RTC_CONFIG = {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" }
+    ]
+  };
+
+  // --- Éléments DOM ---
+  const $ = (id) => document.getElementById(id);
+  const joinScreen = $("join-screen");
+  const roomScreen = $("room-screen");
+  const roomInput = $("room-input");
+  const joinBtn = $("join-btn");
+  const shareBtn = $("share-btn");
+  const stopBtn = $("stop-btn");
+  const leaveBtn = $("leave-btn");
+  const video = $("video");
+  const placeholder = $("placeholder");
+  const videoBadge = $("video-badge");
+  const roomNameEl = $("room-name");
+  const peersPill = $("peers-pill");
+  const statusEl = $("status");
+  const connDot = $("conn-dot");
+  const shareLink = $("share-link");
+
+  // --- État ---
+  const socket = io();
+  let roomId = null;
+  let localStream = null;           // notre flux d'écran si on partage
+  let isSharing = false;
+  const peers = {};                 // peerId -> RTCPeerConnection
+  const knownPeers = new Set();     // ids des autres présents dans la room
+
+  // --- Connexion socket ---
+  socket.on("connect", () => { connDot.classList.add("on"); });
+  socket.on("disconnect", () => { connDot.classList.remove("on"); });
+
+  // Pré-remplir depuis l'URL (#salon)
+  if (location.hash.length > 1) {
+    roomInput.value = decodeURIComponent(location.hash.slice(1));
+  }
+
+  // --- Rejoindre ---
+  function join() {
+    const r = roomInput.value.trim();
+    if (!r) { roomInput.focus(); return; }
+    roomId = r;
+    socket.emit("join", roomId);
+    location.hash = encodeURIComponent(roomId);
+    roomNameEl.textContent = roomId;
+    joinScreen.classList.add("hidden");
+    roomScreen.classList.remove("hidden");
+  }
+  joinBtn.addEventListener("click", join);
+  roomInput.addEventListener("keydown", (e) => { if (e.key === "Enter") join(); });
+
+  socket.on("joined", ({ peers: existing }) => {
+    existing.forEach((id) => knownPeers.add(id));
+    updatePeersPill();
+  });
+
+  socket.on("peer-joined", ({ peerId }) => {
+    knownPeers.add(peerId);
+    updatePeersPill();
+    // Si on est déjà en train de partager, on initie une connexion vers ce nouvel arrivant
+    if (isSharing) createOfferTo(peerId);
+  });
+
+  socket.on("peer-left", ({ peerId }) => {
+    knownPeers.delete(peerId);
+    closePeer(peerId);
+    updatePeersPill();
+  });
+
+  function updatePeersPill() {
+    const n = knownPeers.size;
+    peersPill.textContent = n + " participant" + (n > 1 ? "s" : "") + " connecté" + (n > 1 ? "s" : "");
+  }
+
+  // Ferme proprement une connexion pair
+  function closePeer(peerId) {
+    const pc = peers[peerId];
+    if (pc) {
+      try { pc.close(); } catch (e) { /* ignore */ }
+      delete peers[peerId];
+    }
+  }
+
+  // --- Démarrer le partage d'écran ---
+  shareBtn.addEventListener("click", async () => {
+    try {
+      localStream = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: { ideal: 30 } },
+        audio: true
+      });
+    } catch (err) {
+      setStatus("Partage annulé ou refusé par le navigateur.");
+      return;
+    }
+
+    isSharing = true;
+    showLocalPreview();
+    shareBtn.classList.add("hidden");
+    stopBtn.classList.remove("hidden");
+
+    // Si l'utilisateur arrête via le bouton natif du navigateur
+    localStream.getVideoTracks()[0].addEventListener("ended", stopSharing);
+
+    // On envoie une offre à chaque participant déjà présent
+    knownPeers.forEach((id) => createOfferTo(id));
+    setStatus("Vous partagez votre écran.");
+  });
+
+  stopBtn.addEventListener("click", stopSharing);
+
+  function stopSharing() {
+    if (!isSharing) return;
+    isSharing = false;
+    if (localStream) {
+      localStream.getTracks().forEach((t) => t.stop());
+      localStream = null;
+    }
+    Object.keys(peers).forEach(closePeer);
+    socket.emit("stop-share");
+    stopBtn.classList.add("hidden");
+    shareBtn.classList.remove("hidden");
+    hideVideo();
+    setStatus("Partage arrêté.");
+  }
+
+  // --- Création d'une connexion (côté émetteur) ---
+  function createPeer(peerId) {
+    const pc = new RTCPeerConnection(RTC_CONFIG);
+    peers[peerId] = pc;
+
+    pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        socket.emit("signal", { to: peerId, data: { type: "candidate", candidate: e.candidate } });
+      }
+    };
+
+    // Côté récepteur : on reçoit le flux distant
+    pc.ontrack = (e) => {
+      video.srcObject = e.streams[0];
+      showRemoteVideo();
+    };
+
+    return pc;
+  }
+
+  async function createOfferTo(peerId) {
+    const pc = peers[peerId] || createPeer(peerId);
+    if (localStream) {
+      localStream.getTracks().forEach((track) => {
+        // évite d'ajouter deux fois la même piste
+        const already = pc.getSenders().some((s) => s.track === track);
+        if (!already) pc.addTrack(track, localStream);
+      });
+    }
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    socket.emit("signal", { to: peerId, data: { type: "offer", sdp: pc.localDescription } });
+  }
+
+  // --- Réception des signaux ---
+  socket.on("signal", async ({ from, data }) => {
+    let pc = peers[from];
+
+    if (data.type === "offer") {
+      if (!pc) pc = createPeer(from);
+      await pc.setRemoteDescription(data.sdp);
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit("signal", { to: from, data: { type: "answer", sdp: pc.localDescription } });
+    } else if (data.type === "answer") {
+      if (pc) await pc.setRemoteDescription(data.sdp);
+    } else if (data.type === "candidate") {
+      if (pc && data.candidate) {
+        try { await pc.addIceCandidate(data.candidate); } catch (e) { /* ignore */ }
+      }
+    }
+  });
+
+  socket.on("share-stopped", () => {
+    hideVideo();
+    setStatus("Le participant a arrêté son partage.");
+  });
+
+  // --- Affichage vidéo ---
+  function showLocalPreview() {
+    video.srcObject = localStream;
+    video.muted = true; // évite le larsen sur sa propre capture
+    showVideo("Votre écran (aperçu)");
+  }
+  function showRemoteVideo() {
+    video.muted = false;
+    showVideo("Écran distant");
+  }
+  function showVideo(label) {
+    placeholder.classList.add("hidden");
+    video.classList.remove("hidden");
+    videoBadge.textContent = label;
+    videoBadge.classList.remove("hidden");
+  }
+  function hideVideo() {
+    video.srcObject = null;
+    video.classList.add("hidden");
+    placeholder.classList.remove("hidden");
+    videoBadge.classList.add("hidden");
+  }
+
+  // --- Quitter / divers ---
+  leaveBtn.addEventListener("click", () => {
+    stopSharing();
+    location.reload();
+  });
+
+  shareLink.addEventListener("click", () => {
+    const url = location.origin + "/#" + encodeURIComponent(roomId);
+    navigator.clipboard.writeText(url).then(
+      () => setStatus("Lien copié : " + url),
+      () => setStatus("Lien à partager : " + url)
+    );
+  });
+
+  function setStatus(msg) { statusEl.textContent = msg; }
+})();
+</script>
+</body>
+</html>
