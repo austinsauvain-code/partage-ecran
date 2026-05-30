@@ -116,9 +116,15 @@
     border-radius: 8px;
     font-size: 12px;
   }
-  .fs-btn {
+  .video-controls {
     position: absolute;
     top: 12px; right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 2;
+  }
+  .ctrl-btn {
     background: rgba(0,0,0,.6);
     color: #fff;
     border: none;
@@ -126,9 +132,9 @@
     border-radius: 8px;
     font-size: 13px;
     cursor: pointer;
-    z-index: 2;
   }
-  .fs-btn:hover { background: rgba(0,0,0,.85); }
+  .ctrl-btn:hover { background: rgba(0,0,0,.85); }
+  .vol-slider { width: 90px; accent-color: var(--accent); cursor: pointer; }
   /* En plein écran, le conteneur occupe tout l'écran et la vidéo le remplit au maximum */
   .video-wrap:fullscreen,
   .video-wrap:-webkit-full-screen {
@@ -204,7 +210,11 @@
       <div>
         <div class="video-wrap" id="video-wrap">
           <span class="badge hidden" id="video-badge"></span>
-          <button class="fs-btn" id="fs-btn" title="Plein écran (ou double-clic sur la vidéo)">⛶ Plein écran</button>
+          <div class="video-controls">
+            <button class="ctrl-btn" id="mute-btn" title="Couper / activer le son">🔊</button>
+            <input class="vol-slider" id="vol-slider" type="range" min="0" max="300" value="150" title="Volume" />
+            <button class="ctrl-btn" id="fs-btn" title="Plein écran (ou double-clic sur la vidéo)">⛶ Plein écran</button>
+          </div>
           <div class="placeholder" id="placeholder">
             Aucun écran partagé pour le moment.<br />
             Cliquez sur « Partager mon écran », ou attendez qu'un participant partage le sien.
@@ -264,6 +274,8 @@
   const video = $("video");
   const videoWrap = $("video-wrap");
   const fsBtn = $("fs-btn");
+  const muteBtn = $("mute-btn");
+  const volSlider = $("vol-slider");
   const placeholder = $("placeholder");
   const videoBadge = $("video-badge");
   const statusEl = $("status");
@@ -286,8 +298,24 @@
   let screenStream = null;    // flux écran local quand on partage
   let isSharing = false;
 
-  // peerId -> { pc, polite, makingOffer, ignoreOffer, name, audioEl }
+  // peerId -> { pc, polite, makingOffer, ignoreOffer, name, audioEls, audioNodes }
   const peers = {};
+
+  // --- Audio entrant : tout passe par un nœud de gain (volume réglable, ampli possible) ---
+  let audioCtx = null, masterGain = null;
+  let soundOn = true;
+  let volume = parseInt(volSlider.value, 10) / 100; // 1.5 = 150 %
+  function ensureAudioGraph() {
+    if (audioCtx) return;
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new Ctx();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = soundOn ? volume : 0;
+    masterGain.connect(audioCtx.destination);
+  }
+  function applyVolume() {
+    if (masterGain) masterGain.gain.value = soundOn ? volume : 0;
+  }
 
   // --- Connexion socket ---
   socket.on("connect", () => connDot.classList.add("on"));
@@ -353,14 +381,17 @@
       makingOffer: false,
       ignoreOffer: false,
       name: name || "Invité",
-      audioEls: []
+      audioEls: [],
+      audioNodes: []
     };
     peers[peerId] = peer;
 
     pc.onnegotiationneeded = async () => {
       try {
         peer.makingOffer = true;
-        await pc.setLocalDescription();
+        const offer = await pc.createOffer();
+        offer.sdp = tuneOpus(offer.sdp);
+        await pc.setLocalDescription(offer);
         socket.emit("signal", { to: peerId, data: { description: pc.localDescription } });
       } catch (e) {
         console.error("negotiationneeded", e);
@@ -375,16 +406,27 @@
 
     pc.ontrack = ({ track, streams }) => {
       if (track.kind === "audio") {
-        // Audio d'un participant (micro ou son d'écran) : un élément <audio> par piste
+        // Audio d'un participant (micro ou son d'écran).
+        // On le fait passer par Web Audio (gain réglable / ampli) pour un volume correct.
+        ensureAudioGraph();
+        audioCtx.resume().catch(() => {});
+        const ms = new MediaStream([track]);
+        // Élément <audio> muet : garde le flux actif de façon fiable (le son sort via Web Audio).
         const el = document.createElement("audio");
         el.autoplay = true;
-        el.srcObject = new MediaStream([track]);
+        el.muted = true;
+        el.srcObject = ms;
         audioSink.appendChild(el);
-        peer.audioEls.push(el);
         el.play().catch(() => {});
+        const srcNode = audioCtx.createMediaStreamSource(ms);
+        srcNode.connect(masterGain);
+        peer.audioEls.push(el);
+        peer.audioNodes.push(srcNode);
         track.addEventListener("ended", () => {
+          try { srcNode.disconnect(); } catch (e) {}
           el.remove();
           peer.audioEls = peer.audioEls.filter((a) => a !== el);
+          peer.audioNodes = peer.audioNodes.filter((n) => n !== srcNode);
         });
       } else {
         // Vidéo = partage d'écran distant
@@ -421,6 +463,7 @@
     const peer = peers[peerId];
     if (!peer) return;
     try { peer.pc.close(); } catch (e) {}
+    peer.audioNodes.forEach((n) => { try { n.disconnect(); } catch (e) {} });
     peer.audioEls.forEach((el) => el.remove());
     delete peers[peerId];
   }
@@ -438,7 +481,9 @@
 
         await pc.setRemoteDescription(data.description);
         if (data.description.type === "offer") {
-          await pc.setLocalDescription();
+          const answer = await pc.createAnswer();
+          answer.sdp = tuneOpus(answer.sdp);
+          await pc.setLocalDescription(answer);
           socket.emit("signal", { to: from, data: { description: pc.localDescription } });
         }
       } else if (data.candidate) {
@@ -488,7 +533,15 @@
     try {
       screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: 30 } },
-        audio: true
+        // Son d'écran : on désactive les traitements "voix" (qui écrasent et hachent
+        // le son de TV/musique) et on demande de la stéréo haute qualité.
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          channelCount: 2,
+          sampleRate: 48000
+        }
       });
     } catch (e) {
       setStatus("Partage annulé ou refusé.");
@@ -607,6 +660,52 @@
   });
 
   function setStatus(msg) { statusEl.textContent = msg; }
+
+  // ===== Qualité audio : Opus stéréo haut débit (son d'écran/musique correct) =====
+  function tuneOpus(sdp) {
+    if (!sdp) return sdp;
+    const lines = sdp.split("\r\n");
+    let pt = null;
+    for (const l of lines) {
+      const m = l.match(/^a=rtpmap:(\d+)\s+opus\/48000/i);
+      if (m) { pt = m[1]; break; }
+    }
+    if (!pt) return sdp;
+    const params =
+      "stereo=1;sprop-stereo=1;maxaveragebitrate=256000;maxplaybackrate=48000;cbr=0;useinbandfec=1;usedtx=0";
+    let done = false;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].indexOf("a=fmtp:" + pt + " ") === 0) {
+        lines[i] = "a=fmtp:" + pt + " " + params;
+        done = true;
+        break;
+      }
+    }
+    if (!done) {
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].indexOf("a=rtpmap:" + pt + " opus") === 0) {
+          lines.splice(i + 1, 0, "a=fmtp:" + pt + " " + params);
+          break;
+        }
+      }
+    }
+    return lines.join("\r\n");
+  }
+
+  // ===== Contrôle du volume (bouton son + curseur, ampli jusqu'à 300 %) =====
+  volSlider.addEventListener("input", () => {
+    volume = parseInt(volSlider.value, 10) / 100;
+    if (volume > 0 && !soundOn) { soundOn = true; updateMuteBtn(); }
+    if (audioCtx) audioCtx.resume().catch(() => {});
+    applyVolume();
+  });
+  muteBtn.addEventListener("click", () => {
+    soundOn = !soundOn;
+    if (soundOn && audioCtx) audioCtx.resume().catch(() => {});
+    updateMuteBtn();
+    applyVolume();
+  });
+  function updateMuteBtn() { muteBtn.textContent = soundOn ? "🔊" : "🔇"; }
 
   // ===== Plein écran (desktop + mobile) =====
   function isFsActive() {
