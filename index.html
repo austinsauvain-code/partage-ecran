@@ -116,6 +116,22 @@
     border-radius: 8px;
     font-size: 12px;
   }
+  .fs-btn {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: rgba(0,0,0,.6);
+    color: #fff;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .fs-btn:hover { background: rgba(0,0,0,.85); }
+  /* En plein écran, la vidéo remplit l'écran proprement */
+  .video-wrap:fullscreen { aspect-ratio: auto; width: 100vw; height: 100vh; border-radius: 0; }
+  .video-wrap:fullscreen video { object-fit: contain; }
   .hidden { display: none !important; }
   .status { font-size: 13px; color: var(--muted); margin-top: 14px; min-height: 18px; }
   .copy { cursor: pointer; text-decoration: underline; }
@@ -179,8 +195,9 @@
 
     <div class="layout">
       <div>
-        <div class="video-wrap">
+        <div class="video-wrap" id="video-wrap">
           <span class="badge hidden" id="video-badge"></span>
+          <button class="fs-btn" id="fs-btn" title="Plein écran (ou double-clic sur la vidéo)">⛶ Plein écran</button>
           <div class="placeholder" id="placeholder">
             Aucun écran partagé pour le moment.<br />
             Cliquez sur « Partager mon écran », ou attendez qu'un participant partage le sien.
@@ -238,6 +255,8 @@
   const stopBtn = $("stop-btn");
   const leaveBtn = $("leave-btn");
   const video = $("video");
+  const videoWrap = $("video-wrap");
+  const fsBtn = $("fs-btn");
   const placeholder = $("placeholder");
   const videoBadge = $("video-badge");
   const statusEl = $("status");
@@ -576,6 +595,25 @@
   });
 
   function setStatus(msg) { statusEl.textContent = msg; }
+
+  // ===== Plein écran =====
+  function toggleFullscreen() {
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    if (fsEl) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+      const req = videoWrap.requestFullscreen || videoWrap.webkitRequestFullscreen;
+      if (req) req.call(videoWrap).catch(() => {});
+    }
+  }
+  fsBtn.addEventListener("click", toggleFullscreen);
+  video.addEventListener("dblclick", toggleFullscreen);
+  function updateFsLabel() {
+    const on = document.fullscreenElement || document.webkitFullscreenElement;
+    fsBtn.textContent = on ? "⮌ Quitter" : "⛶ Plein écran";
+  }
+  document.addEventListener("fullscreenchange", updateFsLabel);
+  document.addEventListener("webkitfullscreenchange", updateFsLabel);
 })();
 </script>
 </body>
