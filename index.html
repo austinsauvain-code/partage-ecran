@@ -197,6 +197,63 @@
   .join-logo .logo-badge { width: 78px; height: 78px; }
   .join-logo .name { font-size: 22px; font-weight: 800; letter-spacing: .6px; color: var(--text); }
   .join-logo .name .live { color: #ef3e57; }
+
+  /* ===== Hero / page d'accueil ===== */
+  .hero {
+    position: relative;
+    border-radius: 28px;
+    background: radial-gradient(120% 130% at 82% 8%, #7b3ff2 0%, #5a1fb8 45%, #2c0e63 100%);
+    color: #fff;
+    padding: 46px 48px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .hero-bg-dots {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,.12) 1.5px, transparent 1.5px);
+    background-size: 26px 26px;
+    -webkit-mask-image: linear-gradient(120deg, transparent 35%, #000 100%);
+    mask-image: linear-gradient(120deg, transparent 35%, #000 100%);
+    opacity: .55; pointer-events: none;
+  }
+  .hero-grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.05fr .95fr;
+    gap: 32px;
+    align-items: center;
+  }
+  @media (max-width: 860px) {
+    .hero { padding: 32px 22px; }
+    .hero-grid { grid-template-columns: 1fr; gap: 24px; }
+    .hero-right { order: -1; }
+  }
+  .hero-eyebrow {
+    display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    background: rgba(255,255,255,.14); padding: 7px 14px; border-radius: 999px;
+  }
+  .hero-title {
+    font-size: clamp(34px, 5vw, 54px); line-height: 1.03; font-weight: 900;
+    font-style: italic; text-transform: uppercase; margin: 18px 0 14px;
+  }
+  .hero-title span {
+    background: linear-gradient(90deg, #ff8aa3, #ff5470);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero-sub { color: rgba(255,255,255,.82); font-size: 15px; line-height: 1.6; max-width: 440px; margin: 0 0 22px; }
+  .hero-form { display: flex; flex-direction: column; gap: 12px; max-width: 420px; }
+  .hero-form input {
+    width: 100%; padding: 13px 16px; border-radius: 14px;
+    background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.22);
+    color: #fff; font-size: 15px; margin: 0;
+  }
+  .hero-form input::placeholder { color: rgba(255,255,255,.6); }
+  .hero-form input:focus { outline: none; border-color: #fff; background: rgba(255,255,255,.2); }
+  .hero-form .btn-primary { background: #fff; color: var(--accent); box-shadow: 0 8px 20px rgba(0,0,0,.28); }
+  .hero-form .btn-primary:hover { transform: translateY(-1px); background: #fff; }
+  .hero-features { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 18px; font-size: 13px; color: rgba(255,255,255,.85); }
+  .hero-right { display: flex; justify-content: center; }
+  .hero-illu { width: 100%; max-width: 360px; height: auto; }
 </style>
 </head>
 <body>
@@ -224,32 +281,59 @@
 
 <main>
   <!-- Écran d'accueil -->
-  <section class="join" id="join-screen">
-    <div class="join-logo">
-      <svg class="logo-badge" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="TS Live Stream">
-        <defs>
-          <linearGradient id="tsJoin" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#9d5cf5" />
-            <stop offset="1" stop-color="#6d28d9" />
-          </linearGradient>
-        </defs>
-        <rect x="3" y="3" width="58" height="58" rx="17" fill="url(#tsJoin)" />
-        <text x="29" y="45" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="33" fill="#fff">TS</text>
-        <g fill="none" stroke="#ff5470" stroke-width="3" stroke-linecap="round">
-          <path d="M43 23 a9 9 0 0 1 9 9" />
-          <path d="M43 16 a16 16 0 0 1 16 16" />
-        </g>
-        <circle class="live-dot" cx="44" cy="32" r="3.4" fill="#ff5470" />
-      </svg>
-      <span class="name">TS <span class="live">Live</span> Stream</span>
+  <section class="hero" id="join-screen">
+    <div class="hero-bg-dots"></div>
+    <div class="hero-grid">
+      <div class="hero-left">
+        <span class="hero-eyebrow">🔴 EN DIRECT · SANS INSTALLATION</span>
+        <h1 class="hero-title">Partagez<br /><span>votre écran</span><br />en direct</h1>
+        <p class="hero-sub">Écran, voix et chat dans un même salon. Choisissez un nom de salon, partagez le lien à vos amis, et c'est parti — rien à installer.</p>
+        <div class="hero-form">
+          <input id="name-input" placeholder="Votre nom (ex : Martin)" autocomplete="off" maxlength="40" />
+          <input id="room-input" placeholder="Nom du salon (ex : reunion-mardi)" autocomplete="off" />
+          <button class="btn-primary btn-block" id="join-btn">Entrer dans le salon →</button>
+        </div>
+        <div class="hero-features">
+          <span>🖥️ Partage d'écran</span>
+          <span>🎙️ Voix</span>
+          <span>💬 Chat</span>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <svg class="hero-illu" viewBox="0 0 380 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="heroCircle" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#a86bff" />
+              <stop offset="1" stop-color="#5a1fb8" />
+            </linearGradient>
+            <linearGradient id="heroPlay" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ffffff" />
+              <stop offset="1" stop-color="#e9defb" />
+            </linearGradient>
+          </defs>
+          <g fill="rgba(255,255,255,.35)">
+            <circle cx="40" cy="120" r="3" /><circle cx="58" cy="150" r="3" /><circle cx="30" cy="180" r="3" />
+            <circle cx="350" cy="250" r="3" /><circle cx="330" cy="285" r="3" /><circle cx="362" cy="216" r="3" />
+          </g>
+          <circle cx="190" cy="190" r="150" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="20" />
+          <circle cx="190" cy="190" r="132" fill="url(#heroCircle)" />
+          <circle cx="150" cy="140" r="58" fill="rgba(255,255,255,.12)" />
+          <circle cx="190" cy="190" r="58" fill="rgba(255,255,255,.16)" />
+          <path d="M173 161 L227 190 L173 219 Z" fill="url(#heroPlay)" />
+          <g fill="none" stroke="#ff5470" stroke-width="7" stroke-linecap="round">
+            <path d="M250 122 a40 40 0 0 1 40 40" />
+            <path d="M250 100 a62 62 0 0 1 62 62" />
+          </g>
+          <circle class="live-dot" cx="252" cy="162" r="9" fill="#ff5470" />
+          <g>
+            <rect x="148" y="300" width="84" height="30" rx="15" fill="#ff5470" />
+            <circle cx="167" cy="315" r="5" fill="#fff" />
+            <text x="181" y="320" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="14" fill="#fff">LIVE</text>
+          </g>
+        </svg>
+      </div>
     </div>
-    <h2>Rejoindre une session</h2>
-    <p>Choisissez un nom de salon et partagez-le avec les autres participants. Tous ceux qui entrent dans le même salon peuvent se voir, se parler et discuter.</p>
-    <label for="name-input">Votre nom</label>
-    <input id="name-input" placeholder="ex : Martin" autocomplete="off" maxlength="40" />
-    <label for="room-input">Nom du salon</label>
-    <input id="room-input" placeholder="ex : reunion-mardi" autocomplete="off" />
-    <button class="btn-primary btn-block" id="join-btn">Entrer dans le salon</button>
   </section>
 
   <!-- Salon -->
