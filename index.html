@@ -596,24 +596,48 @@
 
   function setStatus(msg) { statusEl.textContent = msg; }
 
-  // ===== Plein écran =====
-  function toggleFullscreen() {
-    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
-    if (fsEl) {
-      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-    } else {
-      const req = videoWrap.requestFullscreen || videoWrap.webkitRequestFullscreen;
-      if (req) req.call(videoWrap).catch(() => {});
+  // ===== Plein écran (desktop + mobile) =====
+  function isFsActive() {
+    return document.fullscreenElement || document.webkitFullscreenElement ||
+           (video.webkitDisplayingFullscreen === true);
+  }
+  function enterFullscreen() {
+    // 1) API standard sur le conteneur (Android, ordinateurs)
+    if (videoWrap.requestFullscreen) {
+      videoWrap.requestFullscreen().catch(() => enterVideoFullscreen());
+      return;
     }
+    if (videoWrap.webkitRequestFullscreen) {
+      try { videoWrap.webkitRequestFullscreen(); return; } catch (e) {}
+    }
+    // 2) Repli mobile (iPhone/iPad Safari) : plein écran natif de la vidéo
+    enterVideoFullscreen();
+  }
+  function enterVideoFullscreen() {
+    if (video.webkitEnterFullscreen) {        // iOS Safari
+      try { video.play().catch(() => {}); video.webkitEnterFullscreen(); return; } catch (e) {}
+    }
+    if (video.requestFullscreen) { video.requestFullscreen().catch(() => {}); return; }
+    if (video.webkitRequestFullscreen) { try { video.webkitRequestFullscreen(); } catch (e) {} }
+  }
+  function exitFullscreen() {
+    if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    else if (video.webkitExitFullscreen) video.webkitExitFullscreen();
+  }
+  function toggleFullscreen() {
+    if (isFsActive()) exitFullscreen();
+    else enterFullscreen();
   }
   fsBtn.addEventListener("click", toggleFullscreen);
   video.addEventListener("dblclick", toggleFullscreen);
   function updateFsLabel() {
-    const on = document.fullscreenElement || document.webkitFullscreenElement;
-    fsBtn.textContent = on ? "⮌ Quitter" : "⛶ Plein écran";
+    fsBtn.textContent = isFsActive() ? "⮌ Quitter" : "⛶ Plein écran";
   }
   document.addEventListener("fullscreenchange", updateFsLabel);
   document.addEventListener("webkitfullscreenchange", updateFsLabel);
+  video.addEventListener("webkitbeginfullscreen", updateFsLabel);
+  video.addEventListener("webkitendfullscreen", updateFsLabel);
 })();
 </script>
 </body>
