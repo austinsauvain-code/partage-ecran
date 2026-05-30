@@ -129,9 +129,16 @@
     z-index: 2;
   }
   .fs-btn:hover { background: rgba(0,0,0,.85); }
-  /* En plein écran, la vidéo remplit l'écran proprement */
-  .video-wrap:fullscreen { aspect-ratio: auto; width: 100vw; height: 100vh; border-radius: 0; }
-  .video-wrap:fullscreen video { object-fit: contain; }
+  /* En plein écran, le conteneur occupe tout l'écran et la vidéo le remplit au maximum */
+  .video-wrap:fullscreen,
+  .video-wrap:-webkit-full-screen {
+    width: 100vw; height: 100vh; max-width: none; aspect-ratio: auto;
+    border-radius: 0; background: #000;
+  }
+  .video-wrap:fullscreen video,
+  .video-wrap:-webkit-full-screen video {
+    width: 100%; height: 100%; object-fit: contain;
+  }
   .hidden { display: none !important; }
   .status { font-size: 13px; color: var(--muted); margin-top: 14px; min-height: 18px; }
   .copy { cursor: pointer; text-decoration: underline; }
@@ -403,7 +410,8 @@
       });
     }
     if (screenStream) {
-      screenStream.getVideoTracks().forEach((t) => {
+      // getTracks() = vidéo + audio de l'onglet (si « Partager l'audio » a été coché)
+      screenStream.getTracks().forEach((t) => {
         if (!pc.getSenders().some((s) => s.track === t)) pc.addTrack(t, screenStream);
       });
     }
