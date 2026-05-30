@@ -381,9 +381,13 @@
         });
       } else {
         // Vidéo = partage d'écran distant
-        showRemoteScreen(new MediaStream([track]), peer.name);
+        const stream = new MediaStream([track]);
+        showRemoteScreen(stream, peer.name);
+        // NB : 'mute' peut être transitoire (début de flux, renégociation à 3+).
+        // On ne masque donc PAS sur 'mute' ; on réaffiche si la vidéo revient.
+        // Le masquage réel se fait via l'événement 'share-stopped' (l'émetteur arrête).
+        track.addEventListener("unmute", () => showRemoteScreen(stream, peer.name));
         track.addEventListener("ended", hideVideo);
-        track.addEventListener("mute", hideVideo);
       }
     };
 
