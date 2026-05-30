@@ -134,14 +134,10 @@
       <span class="name">TS <span class="live">Live</span> Stream</span>
     </div>
     <h2 id="auth-title">Connexion</h2>
-    <p class="sub" id="auth-sub">Connecte-toi pour accéder au streaming et aux discussions.</p>
+    <p class="sub" id="auth-sub">Connecte-toi avec ton pseudo et ton mot de passe.</p>
     <div class="auth-err hidden" id="auth-err"></div>
-    <div id="field-username" class="hidden">
-      <label for="su-username">Nom d'utilisateur</label>
-      <input id="su-username" placeholder="ex : Martin" maxlength="40" autocomplete="off" />
-    </div>
-    <label for="au-email">Email</label>
-    <input id="au-email" type="email" placeholder="email@exemple.com" autocomplete="email" />
+    <label for="au-username">Nom d'utilisateur</label>
+    <input id="au-username" placeholder="ex : Martin" maxlength="40" autocomplete="username" />
     <label for="au-pass">Mot de passe</label>
     <input id="au-pass" type="password" placeholder="••••••••" autocomplete="current-password" />
     <button class="btn btn-primary btn-block" id="auth-submit">Se connecter</button>
@@ -216,8 +212,7 @@
   // Auth refs
   const authScreen = $("auth-screen"), appShell = $("app-shell");
   const authTitle = $("auth-title"), authSub = $("auth-sub"), authErr = $("auth-err");
-  const fieldUsername = $("field-username"), suUsername = $("su-username");
-  const auEmail = $("au-email"), auPass = $("au-pass"), authSubmit = $("auth-submit"),
+  const auUsername = $("au-username"), auPass = $("au-pass"), authSubmit = $("auth-submit"),
         authToggle = $("auth-toggle"), authSwitch = $("auth-switch");
   // Shell refs
   const navStream = $("nav-stream"), groupsList = $("groups-list"), newGroupBtn = $("new-group-btn");
@@ -240,9 +235,8 @@
   function clearErr() { authErr.classList.add("hidden"); }
   authToggle.addEventListener("click", () => {
     isSignup = !isSignup; clearErr();
-    fieldUsername.classList.toggle("hidden", !isSignup);
     authTitle.textContent = isSignup ? "Créer un compte" : "Connexion";
-    authSub.textContent = isSignup ? "Choisis un nom, un email et un mot de passe." : "Connecte-toi pour accéder au streaming et aux discussions.";
+    authSub.textContent = isSignup ? "Choisis un pseudo et un mot de passe." : "Connecte-toi avec ton pseudo et ton mot de passe.";
     authSubmit.textContent = isSignup ? "Créer mon compte" : "Se connecter";
     authSwitch.innerHTML = isSignup ? "Déjà un compte ? <a id='auth-toggle'>Se connecter</a>" : "Pas de compte ? <a id='auth-toggle'>Créer un compte</a>";
     $("auth-toggle").addEventListener("click", () => authToggle.click());
@@ -251,26 +245,31 @@
   authSubmit.addEventListener("click", doAuth);
   auPass.addEventListener("keydown", (e) => { if (e.key === "Enter") doAuth(); });
 
+  // Transforme un pseudo en email interne (identique au serveur). Aucun email n'est envoyé.
+  function emailFor(username) {
+    const clean = String(username || "").trim().toLowerCase().replace(/[^a-z0-9_.-]/g, "");
+    return clean ? clean + "@tslive.app" : "";
+  }
+
   async function doAuth() {
     clearErr();
-    const email = auEmail.value.trim(), pass = auPass.value;
-    if (!email || !pass) { showErr("Email et mot de passe requis."); return; }
+    const username = auUsername.value.trim(), pass = auPass.value;
+    const email = emailFor(username);
+    if (!email) { showErr("Choisis un pseudo (lettres, chiffres, . _ -)."); return; }
+    if (!pass) { showErr("Mot de passe requis."); return; }
     authSubmit.disabled = true; authSubmit.textContent = "…";
     try {
       if (isSignup) {
-        const username = suUsername.value.trim() || email.split("@")[0];
-        const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { username } } });
-        if (error) throw error;
-        // Si pas de session (confirmation email activée), on tente une connexion directe
-        if (!data.session) {
-          const r = await sb.auth.signInWithPassword({ email, password: pass });
-          if (r.error) { showErr("Compte créé. Confirme ton email puis connecte-toi (ou désactive la confirmation dans Supabase)."); resetSubmit(); return; }
-        }
-        await ensureProfile(username);
-      } else {
-        const { error } = await sb.auth.signInWithPassword({ email, password: pass });
-        if (error) throw error;
+        const resp = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password: pass })
+        });
+        const out = await resp.json().catch(() => ({}));
+        if (!resp.ok) { showErr(out.error || "Inscription impossible."); resetSubmit(); return; }
       }
+      const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if (error) throw error;
       await onLoggedIn();
     } catch (e) {
       showErr(e.message || "Erreur d'authentification.");
