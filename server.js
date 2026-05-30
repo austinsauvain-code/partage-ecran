@@ -12,8 +12,9 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
-// Sert le client. index.html est à la racine du projet.
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+// Accueil = coquille de l'app (Discord-like). L'app de streaming reste
+// accessible en /index.html (affichée dans un cadre intégré).
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'home.html')));
 app.use(express.static(__dirname, { index: false }));
 
 io.on('connection', (socket) => {
