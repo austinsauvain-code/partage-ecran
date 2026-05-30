@@ -25,7 +25,7 @@
     min-height: 100vh;
   }
   header {
-    padding: 18px 24px;
+    padding: 16px 24px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -34,7 +34,7 @@
   header h1 { font-size: 18px; margin: 0; font-weight: 600; }
   .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
   .dot.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
-  main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px; }
 
   .join {
     background: var(--panel);
@@ -61,24 +61,28 @@
   button {
     border: none;
     border-radius: 10px;
-    padding: 12px 18px;
-    font-size: 15px;
+    padding: 11px 16px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: background .15s, opacity .15s;
   }
-  .btn-primary { background: var(--accent); color: white; width: 100%; }
+  .btn-primary { background: var(--accent); color: white; }
   .btn-primary:hover { background: var(--accent-h); }
   .btn-danger { background: var(--danger); color: white; }
   .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-block { width: 100%; }
   button:disabled { opacity: .4; cursor: not-allowed; }
+
+  .layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
 
   .toolbar {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
   }
   .room-pill {
     background: var(--panel);
@@ -103,12 +107,7 @@
     justify-content: center;
   }
   video { width: 100%; height: 100%; object-fit: contain; background: #000; }
-  .placeholder {
-    color: var(--muted);
-    text-align: center;
-    padding: 24px;
-    font-size: 15px;
-  }
+  .placeholder { color: var(--muted); text-align: center; padding: 24px; font-size: 15px; }
   .badge {
     position: absolute;
     top: 12px; left: 12px;
@@ -120,6 +119,32 @@
   .hidden { display: none !important; }
   .status { font-size: 13px; color: var(--muted); margin-top: 14px; min-height: 18px; }
   .copy { cursor: pointer; text-decoration: underline; }
+
+  /* Chat */
+  .chat {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    height: 540px;
+  }
+  .chat-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .chat-head small { display: block; color: var(--muted); font-weight: 400; margin-top: 2px; }
+  .messages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { font-size: 14px; line-height: 1.35; max-width: 90%; }
+  .msg .who { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+  .msg .bubble { background: #232733; padding: 8px 11px; border-radius: 10px; display: inline-block; word-break: break-word; }
+  .msg.me { align-self: flex-end; text-align: right; }
+  .msg.me .bubble { background: var(--accent); color: #fff; }
+  .msg.system { align-self: center; color: var(--muted); font-size: 12px; font-style: italic; max-width: 100%; }
+  .chat-input { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
+  .chat-input input { margin: 0; }
 </style>
 </head>
 <body>
@@ -129,38 +154,59 @@
 </header>
 
 <main>
-  <!-- Écran d'accueil : rejoindre une room -->
+  <!-- Écran d'accueil -->
   <section class="join" id="join-screen">
     <h2>Rejoindre une session</h2>
-    <p>Entrez un nom de salon. Partagez ce même nom avec la personne qui doit voir votre écran (ou inversement).</p>
+    <p>Choisissez un nom de salon et partagez-le avec les autres participants. Tous ceux qui entrent dans le même salon peuvent se voir, se parler et discuter.</p>
+    <label for="name-input">Votre nom</label>
+    <input id="name-input" placeholder="ex : Martin" autocomplete="off" maxlength="40" />
     <label for="room-input">Nom du salon</label>
     <input id="room-input" placeholder="ex : reunion-mardi" autocomplete="off" />
-    <button class="btn-primary" id="join-btn">Entrer dans le salon</button>
+    <button class="btn-primary btn-block" id="join-btn">Entrer dans le salon</button>
   </section>
 
-  <!-- Écran de session -->
+  <!-- Salon -->
   <section id="room-screen" class="hidden">
     <div class="toolbar">
       <span class="room-pill">Salon : <b id="room-name"></b></span>
-      <span class="room-pill" id="peers-pill">0 participant connecté</span>
+      <span class="room-pill" id="peers-pill">Seul pour l'instant</span>
       <span class="spacer"></span>
-      <button class="btn-primary" id="share-btn" style="width:auto">Partager mon écran</button>
+      <button class="btn-ghost" id="mic-btn">🎙️ Activer le micro</button>
+      <button class="btn-primary" id="share-btn">Partager mon écran</button>
       <button class="btn-danger hidden" id="stop-btn">Arrêter le partage</button>
       <button class="btn-ghost" id="leave-btn">Quitter</button>
     </div>
 
-    <div class="video-wrap">
-      <span class="badge hidden" id="video-badge"></span>
-      <div class="placeholder" id="placeholder">
-        Aucun écran partagé pour le moment.<br />
-        Cliquez sur « Partager mon écran », ou attendez qu'un participant partage le sien.
+    <div class="layout">
+      <div>
+        <div class="video-wrap">
+          <span class="badge hidden" id="video-badge"></span>
+          <div class="placeholder" id="placeholder">
+            Aucun écran partagé pour le moment.<br />
+            Cliquez sur « Partager mon écran », ou attendez qu'un participant partage le sien.
+          </div>
+          <video id="video" autoplay playsinline muted class="hidden"></video>
+        </div>
+        <div class="status" id="status">
+          Lien à partager : <span class="copy" id="share-link">copier le lien du salon</span>
+        </div>
       </div>
-      <video id="video" autoplay playsinline class="hidden"></video>
+
+      <div class="chat">
+        <div class="chat-head">
+          Discussion
+          <small id="chat-sub">Messages visibles par tout le salon</small>
+        </div>
+        <div class="messages" id="messages"></div>
+        <div class="chat-input">
+          <input id="chat-text" placeholder="Écrire un message…" autocomplete="off" maxlength="2000" />
+          <button class="btn-primary" id="chat-send">Envoyer</button>
+        </div>
+      </div>
     </div>
 
-    <div class="status" id="status">
-      Lien à partager : <span class="copy" id="share-link">copier le lien du salon</span>
-    </div>
+    <!-- Conteneur caché pour les flux audio des autres participants -->
+    <div id="audio-sink" style="display:none"></div>
   </section>
 </main>
 
@@ -177,109 +223,252 @@
     ]
   };
 
-  // --- Éléments DOM ---
   const $ = (id) => document.getElementById(id);
+  // Accueil
   const joinScreen = $("join-screen");
-  const roomScreen = $("room-screen");
+  const nameInput = $("name-input");
   const roomInput = $("room-input");
   const joinBtn = $("join-btn");
+  // Salon
+  const roomScreen = $("room-screen");
+  const roomNameEl = $("room-name");
+  const peersPill = $("peers-pill");
+  const micBtn = $("mic-btn");
   const shareBtn = $("share-btn");
   const stopBtn = $("stop-btn");
   const leaveBtn = $("leave-btn");
   const video = $("video");
   const placeholder = $("placeholder");
   const videoBadge = $("video-badge");
-  const roomNameEl = $("room-name");
-  const peersPill = $("peers-pill");
   const statusEl = $("status");
   const connDot = $("conn-dot");
   const shareLink = $("share-link");
+  const audioSink = $("audio-sink");
+  // Chat
+  const messagesEl = $("messages");
+  const chatText = $("chat-text");
+  const chatSend = $("chat-send");
 
   // --- État ---
   const socket = io();
+  let selfId = null;
   let roomId = null;
-  let localStream = null;           // notre flux d'écran si on partage
+  let myName = "Invité";
+
+  let micStream = null;       // flux micro local (créé au 1er clic)
+  let micEnabled = false;
+  let screenStream = null;    // flux écran local quand on partage
   let isSharing = false;
-  const peers = {};                 // peerId -> RTCPeerConnection
-  const knownPeers = new Set();     // ids des autres présents dans la room
+
+  // peerId -> { pc, polite, makingOffer, ignoreOffer, name, audioEl }
+  const peers = {};
 
   // --- Connexion socket ---
-  socket.on("connect", () => { connDot.classList.add("on"); });
-  socket.on("disconnect", () => { connDot.classList.remove("on"); });
+  socket.on("connect", () => connDot.classList.add("on"));
+  socket.on("disconnect", () => connDot.classList.remove("on"));
 
   // Pré-remplir depuis l'URL (#salon)
   if (location.hash.length > 1) {
     roomInput.value = decodeURIComponent(location.hash.slice(1));
   }
 
-  // --- Rejoindre ---
+  // ===== Rejoindre =====
   function join() {
     const r = roomInput.value.trim();
     if (!r) { roomInput.focus(); return; }
     roomId = r;
-    socket.emit("join", roomId);
+    myName = nameInput.value.trim() || "Invité";
+    socket.emit("join", { roomId, name: myName });
     location.hash = encodeURIComponent(roomId);
     roomNameEl.textContent = roomId;
     joinScreen.classList.add("hidden");
     roomScreen.classList.remove("hidden");
+    chatText.focus();
   }
   joinBtn.addEventListener("click", join);
   roomInput.addEventListener("keydown", (e) => { if (e.key === "Enter") join(); });
+  nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") roomInput.focus(); });
 
-  socket.on("joined", ({ peers: existing }) => {
-    existing.forEach((id) => knownPeers.add(id));
+  socket.on("joined", ({ selfId: id, peers: existing }) => {
+    selfId = id;
+    existing.forEach((p) => { ensurePeer(p.id, p.name); });
     updatePeersPill();
   });
 
-  socket.on("peer-joined", ({ peerId }) => {
-    knownPeers.add(peerId);
+  socket.on("peer-joined", ({ peerId, name }) => {
+    ensurePeer(peerId, name);
+    addSystemMessage(`${name} a rejoint le salon`);
     updatePeersPill();
-    // Si on est déjà en train de partager, on initie une connexion vers ce nouvel arrivant
-    if (isSharing) createOfferTo(peerId);
   });
 
-  socket.on("peer-left", ({ peerId }) => {
-    knownPeers.delete(peerId);
+  socket.on("peer-left", ({ peerId, name }) => {
     closePeer(peerId);
+    addSystemMessage(`${name} a quitté le salon`);
     updatePeersPill();
   });
 
   function updatePeersPill() {
-    const n = knownPeers.size;
-    peersPill.textContent = n + " participant" + (n > 1 ? "s" : "") + " connecté" + (n > 1 ? "s" : "");
+    const n = Object.keys(peers).length;
+    if (n === 0) peersPill.textContent = "Seul pour l'instant";
+    else peersPill.textContent = n + " autre" + (n > 1 ? "s" : "") + " participant" + (n > 1 ? "s" : "");
   }
 
-  // Ferme proprement une connexion pair
-  function closePeer(peerId) {
-    const pc = peers[peerId];
-    if (pc) {
-      try { pc.close(); } catch (e) { /* ignore */ }
-      delete peers[peerId];
+  // ===== Mesh WebRTC (perfect negotiation) =====
+  function ensurePeer(peerId, name) {
+    if (peers[peerId]) {
+      if (name) peers[peerId].name = name;
+      return peers[peerId];
+    }
+
+    const pc = new RTCPeerConnection(RTC_CONFIG);
+    const peer = {
+      pc,
+      polite: selfId ? selfId > peerId : false, // exactement un pair "poli" par paire
+      makingOffer: false,
+      ignoreOffer: false,
+      name: name || "Invité",
+      audioEls: []
+    };
+    peers[peerId] = peer;
+
+    pc.onnegotiationneeded = async () => {
+      try {
+        peer.makingOffer = true;
+        await pc.setLocalDescription();
+        socket.emit("signal", { to: peerId, data: { description: pc.localDescription } });
+      } catch (e) {
+        console.error("negotiationneeded", e);
+      } finally {
+        peer.makingOffer = false;
+      }
+    };
+
+    pc.onicecandidate = ({ candidate }) => {
+      if (candidate) socket.emit("signal", { to: peerId, data: { candidate } });
+    };
+
+    pc.ontrack = ({ track, streams }) => {
+      if (track.kind === "audio") {
+        // Audio d'un participant (micro ou son d'écran) : un élément <audio> par piste
+        const el = document.createElement("audio");
+        el.autoplay = true;
+        el.srcObject = new MediaStream([track]);
+        audioSink.appendChild(el);
+        peer.audioEls.push(el);
+        el.play().catch(() => {});
+        track.addEventListener("ended", () => {
+          el.remove();
+          peer.audioEls = peer.audioEls.filter((a) => a !== el);
+        });
+      } else {
+        // Vidéo = partage d'écran distant
+        showRemoteScreen(new MediaStream([track]), peer.name);
+        track.addEventListener("ended", hideVideo);
+        track.addEventListener("mute", hideVideo);
+      }
+    };
+
+    // Ajoute les pistes locales déjà actives (micro / écran) vers ce nouveau pair
+    addLocalTracksTo(pc);
+    return peer;
+  }
+
+  function addLocalTracksTo(pc) {
+    if (micStream) {
+      micStream.getAudioTracks().forEach((t) => {
+        if (!pc.getSenders().some((s) => s.track === t)) pc.addTrack(t, micStream);
+      });
+    }
+    if (screenStream) {
+      screenStream.getVideoTracks().forEach((t) => {
+        if (!pc.getSenders().some((s) => s.track === t)) pc.addTrack(t, screenStream);
+      });
     }
   }
 
-  // --- Démarrer le partage d'écran ---
+  function closePeer(peerId) {
+    const peer = peers[peerId];
+    if (!peer) return;
+    try { peer.pc.close(); } catch (e) {}
+    peer.audioEls.forEach((el) => el.remove());
+    delete peers[peerId];
+  }
+
+  socket.on("signal", async ({ from, data }) => {
+    const peer = peers[from] || ensurePeer(from);
+    const pc = peer.pc;
+    try {
+      if (data.description) {
+        const offerCollision =
+          data.description.type === "offer" &&
+          (peer.makingOffer || pc.signalingState !== "stable");
+        peer.ignoreOffer = !peer.polite && offerCollision;
+        if (peer.ignoreOffer) return;
+
+        await pc.setRemoteDescription(data.description);
+        if (data.description.type === "offer") {
+          await pc.setLocalDescription();
+          socket.emit("signal", { to: from, data: { description: pc.localDescription } });
+        }
+      } else if (data.candidate) {
+        try { await pc.addIceCandidate(data.candidate); }
+        catch (e) { if (!peer.ignoreOffer) throw e; }
+      }
+    } catch (e) {
+      console.error("signal", e);
+    }
+  });
+
+  // ===== Micro =====
+  micBtn.addEventListener("click", async () => {
+    if (!micStream) {
+      // Premier clic : demande l'autorisation et diffuse le micro
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      } catch (e) {
+        setStatus("Micro refusé ou indisponible.");
+        return;
+      }
+      micEnabled = true;
+      Object.values(peers).forEach((p) => addLocalTracksTo(p.pc));
+      updateMicBtn();
+      return;
+    }
+    // Clics suivants : on coupe / réactive sans renégocier
+    micEnabled = !micEnabled;
+    micStream.getAudioTracks().forEach((t) => { t.enabled = micEnabled; });
+    updateMicBtn();
+  });
+
+  function updateMicBtn() {
+    if (micEnabled) {
+      micBtn.textContent = "🎙️ Micro activé";
+      micBtn.classList.remove("btn-ghost");
+      micBtn.classList.add("btn-primary");
+    } else {
+      micBtn.textContent = "🔇 Micro coupé";
+      micBtn.classList.remove("btn-primary");
+      micBtn.classList.add("btn-ghost");
+    }
+  }
+
+  // ===== Partage d'écran =====
   shareBtn.addEventListener("click", async () => {
     try {
-      localStream = await navigator.mediaDevices.getDisplayMedia({
+      screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: 30 } },
         audio: true
       });
-    } catch (err) {
-      setStatus("Partage annulé ou refusé par le navigateur.");
+    } catch (e) {
+      setStatus("Partage annulé ou refusé.");
       return;
     }
-
     isSharing = true;
     showLocalPreview();
     shareBtn.classList.add("hidden");
     stopBtn.classList.remove("hidden");
-
-    // Si l'utilisateur arrête via le bouton natif du navigateur
-    localStream.getVideoTracks()[0].addEventListener("ended", stopSharing);
-
-    // On envoie une offre à chaque participant déjà présent
-    knownPeers.forEach((id) => createOfferTo(id));
+    screenStream.getVideoTracks()[0].addEventListener("ended", stopSharing);
+    Object.values(peers).forEach((p) => addLocalTracksTo(p.pc));
     setStatus("Vous partagez votre écran.");
   });
 
@@ -288,11 +477,19 @@
   function stopSharing() {
     if (!isSharing) return;
     isSharing = false;
-    if (localStream) {
-      localStream.getTracks().forEach((t) => t.stop());
-      localStream = null;
+    // Retire les pistes écran de chaque connexion (déclenche une renégociation)
+    if (screenStream) {
+      const tracks = screenStream.getTracks();
+      Object.values(peers).forEach((p) => {
+        p.pc.getSenders().forEach((s) => {
+          if (s.track && tracks.includes(s.track)) {
+            try { p.pc.removeTrack(s); } catch (e) {}
+          }
+        });
+      });
+      tracks.forEach((t) => t.stop());
+      screenStream = null;
     }
-    Object.keys(peers).forEach(closePeer);
     socket.emit("stop-share");
     stopBtn.classList.add("hidden");
     shareBtn.classList.remove("hidden");
@@ -300,73 +497,18 @@
     setStatus("Partage arrêté.");
   }
 
-  // --- Création d'une connexion (côté émetteur) ---
-  function createPeer(peerId) {
-    const pc = new RTCPeerConnection(RTC_CONFIG);
-    peers[peerId] = pc;
+  socket.on("share-stopped", hideVideo);
 
-    pc.onicecandidate = (e) => {
-      if (e.candidate) {
-        socket.emit("signal", { to: peerId, data: { type: "candidate", candidate: e.candidate } });
-      }
-    };
-
-    // Côté récepteur : on reçoit le flux distant
-    pc.ontrack = (e) => {
-      video.srcObject = e.streams[0];
-      showRemoteVideo();
-    };
-
-    return pc;
-  }
-
-  async function createOfferTo(peerId) {
-    const pc = peers[peerId] || createPeer(peerId);
-    if (localStream) {
-      localStream.getTracks().forEach((track) => {
-        // évite d'ajouter deux fois la même piste
-        const already = pc.getSenders().some((s) => s.track === track);
-        if (!already) pc.addTrack(track, localStream);
-      });
-    }
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    socket.emit("signal", { to: peerId, data: { type: "offer", sdp: pc.localDescription } });
-  }
-
-  // --- Réception des signaux ---
-  socket.on("signal", async ({ from, data }) => {
-    let pc = peers[from];
-
-    if (data.type === "offer") {
-      if (!pc) pc = createPeer(from);
-      await pc.setRemoteDescription(data.sdp);
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit("signal", { to: from, data: { type: "answer", sdp: pc.localDescription } });
-    } else if (data.type === "answer") {
-      if (pc) await pc.setRemoteDescription(data.sdp);
-    } else if (data.type === "candidate") {
-      if (pc && data.candidate) {
-        try { await pc.addIceCandidate(data.candidate); } catch (e) { /* ignore */ }
-      }
-    }
-  });
-
-  socket.on("share-stopped", () => {
-    hideVideo();
-    setStatus("Le participant a arrêté son partage.");
-  });
-
-  // --- Affichage vidéo ---
+  // ===== Affichage vidéo =====
   function showLocalPreview() {
-    video.srcObject = localStream;
-    video.muted = true; // évite le larsen sur sa propre capture
+    video.srcObject = screenStream;
+    video.muted = true;
     showVideo("Votre écran (aperçu)");
   }
-  function showRemoteVideo() {
-    video.muted = false;
-    showVideo("Écran distant");
+  function showRemoteScreen(stream, who) {
+    video.srcObject = stream;
+    video.muted = true; // le son passe par les éléments audio dédiés
+    showVideo("Écran de " + (who || "un participant"));
   }
   function showVideo(label) {
     placeholder.classList.add("hidden");
@@ -375,15 +517,53 @@
     videoBadge.classList.remove("hidden");
   }
   function hideVideo() {
+    if (isSharing) return; // on garde l'aperçu local si on partage encore
     video.srcObject = null;
     video.classList.add("hidden");
     placeholder.classList.remove("hidden");
     videoBadge.classList.add("hidden");
   }
 
-  // --- Quitter / divers ---
+  // ===== Chat =====
+  function sendChat() {
+    const text = chatText.value.trim();
+    if (!text) return;
+    socket.emit("chat", { text });
+    addMessage(myName, text, true);
+    chatText.value = "";
+  }
+  chatSend.addEventListener("click", sendChat);
+  chatText.addEventListener("keydown", (e) => { if (e.key === "Enter") sendChat(); });
+
+  socket.on("chat", ({ name, text }) => addMessage(name, text, false));
+
+  function addMessage(name, text, mine) {
+    const div = document.createElement("div");
+    div.className = "msg" + (mine ? " me" : "");
+    const who = document.createElement("div");
+    who.className = "who";
+    who.textContent = mine ? "Vous" : name;
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text; // textContent => pas d'injection HTML
+    div.appendChild(who);
+    div.appendChild(bubble);
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+  function addSystemMessage(text) {
+    const div = document.createElement("div");
+    div.className = "msg system";
+    div.textContent = text;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  // ===== Divers =====
   leaveBtn.addEventListener("click", () => {
     stopSharing();
+    Object.keys(peers).forEach(closePeer);
+    if (micStream) micStream.getTracks().forEach((t) => t.stop());
     location.reload();
   });
 

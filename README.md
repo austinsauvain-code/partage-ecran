@@ -1,9 +1,23 @@
-# Partage d'écran (WebRTC)
+# Partage d'écran + voix + chat (WebRTC)
 
-Application web pour partager son écran en direct avec une ou plusieurs personnes.
-Pas de plugin à installer : tout passe par le navigateur. Le serveur ne sert qu'à
-mettre les participants en relation (signalisation) — le flux vidéo va en direct
-de pair à pair.
+Application web pour, dans un même salon : partager son écran, se parler au micro,
+et discuter par messages texte. Pas de plugin à installer, tout passe par le
+navigateur. Le serveur ne sert qu'à mettre les participants en relation
+(signalisation) et à relayer le chat — l'écran et la voix vont en direct de pair
+à pair.
+
+## Fonctionnalités
+- Partage d'écran (avec le son de l'écran si le navigateur le propose)
+- Voix : micro coupé par défaut, bouton pour l'activer/couper
+- Chat texte visible par tout le salon
+- Plusieurs participants dans un même salon, avec leurs noms
+
+## Limite de la voix (important)
+La voix utilise une architecture « maillée » : chaque participant envoie son micro
+à tous les autres. C'est fluide jusqu'à ~5-6 personnes. Au-delà, les connexions et
+la bande passante montante deviennent lourdes. Pour une voix à 10+ participants, il
+faudrait un serveur média (SFU), ce qui sort du cadre de cette app. Le chat texte,
+lui, n'a pas cette limite.
 
 ## Prérequis
 - Node.js 18 ou plus
@@ -18,10 +32,10 @@ Le serveur écoute sur http://localhost:3000
 
 ## Utilisation
 1. Ouvrez http://localhost:3000 dans votre navigateur.
-2. Entrez un nom de salon (ex : `reunion-mardi`) et cliquez sur « Entrer ».
-3. Donnez le même nom de salon (ou le lien copié) à l'autre personne.
-4. Une fois les deux dans le salon, cliquez sur « Partager mon écran ».
-   L'autre participant voit votre écran instantanément.
+2. Entrez votre nom et un nom de salon (ex : `reunion-mardi`), cliquez sur « Entrer ».
+3. Donnez le même nom de salon (ou le lien copié) aux autres personnes.
+4. Dans le salon : « Partager mon écran » pour diffuser, « Activer le micro » pour
+   parler, et le panneau de droite pour discuter par messages.
 
 ## Tester seul
 Ouvrez deux onglets sur le même salon : un onglet partage, l'autre regarde.
