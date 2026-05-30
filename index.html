@@ -440,6 +440,13 @@
       }
     };
 
+    // Une fois la connexion établie, on (ré)applique le réglage haute qualité vidéo.
+    pc.addEventListener("connectionstatechange", () => {
+      if (pc.connectionState === "connected" && screenStream) {
+        screenStream.getVideoTracks().forEach((t) => boostVideoSender(pc, t));
+      }
+    });
+
     // Ajoute les pistes locales déjà actives (micro / écran) vers ce nouveau pair
     addLocalTracksTo(pc);
     return peer;
@@ -455,8 +462,24 @@
       // getTracks() = vidéo + audio de l'onglet (si « Partager l'audio » a été coché)
       screenStream.getTracks().forEach((t) => {
         if (!pc.getSenders().some((s) => s.track === t)) pc.addTrack(t, screenStream);
+        if (t.kind === "video") boostVideoSender(pc, t);
       });
     }
+  }
+
+  // Augmente la qualité de la vidéo partagée : débit élevé + on garde la résolution
+  // (au lieu de la baisser, ce qui rend l'image floue) en cas de charge réseau/CPU.
+  async function boostVideoSender(pc, track) {
+    const sender = pc.getSenders().find((s) => s.track === track);
+    if (!sender) return;
+    try {
+      const params = sender.getParameters();
+      if (!params.encodings || !params.encodings.length) params.encodings = [{}];
+      params.encodings[0].maxBitrate = 8000000;   // ~8 Mbps : image nette
+      params.encodings[0].maxFramerate = 30;
+      params.degradationPreference = "maintain-resolution";
+      await sender.setParameters(params);
+    } catch (e) { /* certains navigateurs exigent une négo préalable : sans gravité */ }
   }
 
   function closePeer(peerId) {
@@ -532,7 +555,13 @@
   shareBtn.addEventListener("click", async () => {
     try {
       screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: { ideal: 30 } },
+        // Image : on demande la plus haute résolution possible (jusqu'à ~1440p)
+        // pour une image nette même en plein écran.
+        video: {
+          frameRate: { ideal: 30, max: 30 },
+          width: { ideal: 2560 },
+          height: { ideal: 1440 }
+        },
         // Son d'écran : on désactive les traitements "voix" (qui écrasent et hachent
         // le son de TV/musique) et on demande de la stéréo haute qualité.
         audio: {
@@ -543,6 +572,10 @@
           sampleRate: 48000
         }
       });
+      // 'detail' indique à l'encodeur de privilégier la netteté (résolution) plutôt
+      // que la fluidité — essentiel pour ne pas avoir une image floue.
+      const vTrack = screenStream.getVideoTracks()[0];
+      if (vTrack && "contentHint" in vTrack) vTrack.contentHint = "detail";
     } catch (e) {
       setStatus("Partage annulé ou refusé.");
       return;
