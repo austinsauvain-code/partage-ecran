@@ -2,8 +2,15 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>TS Live Stream</title>
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#6d28d9" />
+<link rel="icon" href="/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/icon.svg" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="TS Live Stream" />
 <style>
   :root {
     --bg: #eceaf4;
@@ -274,6 +281,13 @@
   const SUPABASE_URL = "https://pukzfqdfkvojwznxqqme.supabase.co";
   const SUPABASE_KEY = "sb_publishable_odYYSKUKEWJrCf5bub_Spg_jwEJr-yP";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // PWA : enregistre le service worker (rend l'app installable)
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    });
+  }
 
   const $ = (id) => document.getElementById(id);
   // Auth refs

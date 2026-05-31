@@ -1,0 +1,16 @@
+{
+  "name": "TS Live Stream",
+  "short_name": "TS Live",
+  "description": "Partage d'écran en direct, voix et discussions de groupe.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#160a2b",
+  "theme_color": "#6d28d9",
+  "lang": "fr",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
