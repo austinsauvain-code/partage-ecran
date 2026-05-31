@@ -141,6 +141,12 @@
   .composer .icon-btn { background: rgba(255,255,255,.14); color: #fff; width: 44px; height: 44px; border-radius: 50%; font-size: 18px; flex: none; }
   .composer .icon-btn:disabled { opacity: .45; cursor: not-allowed; }
   .composer .send { background: var(--grad); color: #fff; width: 44px; height: 44px; border-radius: 50%; font-size: 18px; flex: none; }
+  .composer .icon-btn.recording { background: #ef4444; color: #fff; animation: livepulse 1.2s ease-in-out infinite; }
+  .chat-img { max-width: 240px; max-height: 260px; border-radius: 10px; display: block; }
+  .chat-audio { width: 232px; height: 40px; }
+  .chat-file { color: #fff; text-decoration: underline; word-break: break-all; }
+  .msg .bubble.media { padding: 6px; background: rgba(255,255,255,.1); }
+  .msg.me .bubble.media { background: rgba(124,58,237,.4); }
 
   /* ---- Modal ---- */
   .modal-bg { position: fixed; inset: 0; background: rgba(20,10,40,.5); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
@@ -231,7 +237,9 @@
       </div>
       <div class="chat-body" id="chat-body"></div>
       <div class="composer">
-        <button class="icon-btn" id="attach-btn" title="Fichiers, photos, vocaux (bientôt)" disabled>📎</button>
+        <input type="file" id="file-input" accept="image/*,application/pdf,.doc,.docx,.txt,.zip,.mp3,.mp4" hidden />
+        <button class="icon-btn" id="attach-btn" title="Envoyer une photo, un fichier ou un PDF">📎</button>
+        <button class="icon-btn" id="voice-btn" title="Message vocal (cliquer pour démarrer / arrêter)">🎤</button>
         <input id="msg-input" placeholder="Écrire un message…" autocomplete="off" maxlength="2000" />
         <button class="send" id="send-btn" title="Envoyer">➤</button>
       </div>
@@ -466,7 +474,22 @@
     who.textContent = mine ? "Vous" : (profileCache[m.sender] || "?");
     const bubble = document.createElement("div");
     bubble.className = "bubble";
-    bubble.textContent = m.content || "";
+    if (m.type === "image" && m.file_url) {
+      bubble.classList.add("media");
+      const a = document.createElement("a"); a.href = m.file_url; a.target = "_blank"; a.rel = "noopener";
+      const img = document.createElement("img"); img.className = "chat-img"; img.src = m.file_url; img.alt = m.file_name || "image"; img.loading = "lazy";
+      a.appendChild(img); bubble.appendChild(a);
+    } else if (m.type === "audio" && m.file_url) {
+      bubble.classList.add("media");
+      const au = document.createElement("audio"); au.className = "chat-audio"; au.controls = true; au.src = m.file_url;
+      bubble.appendChild(au);
+    } else if (m.type === "file" && m.file_url) {
+      const a = document.createElement("a"); a.className = "chat-file"; a.href = m.file_url; a.target = "_blank"; a.rel = "noopener";
+      a.textContent = "📎 " + (m.file_name || "fichier");
+      bubble.appendChild(a);
+    } else {
+      bubble.textContent = m.content || "";
+    }
     div.appendChild(who); div.appendChild(bubble);
     chatBody.appendChild(div);
   }
@@ -482,6 +505,63 @@
   }
   sendBtn.addEventListener("click", sendMessage);
   msgInput.addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessage(); });
+
+  // ---------- FICHIERS / PHOTOS / PDF + VOCAUX ----------
+  const fileInput = $("file-input"), attachBtn = $("attach-btn"), voiceBtn = $("voice-btn");
+
+  attachBtn.addEventListener("click", () => { if (currentGroup) fileInput.click(); });
+  fileInput.addEventListener("change", async () => {
+    const f = fileInput.files[0]; fileInput.value = "";
+    if (f) await sendFile(f);
+  });
+
+  async function uploadToBucket(blob, filename) {
+    const ext = (String(filename).split(".").pop() || "bin").toLowerCase();
+    const path = currentGroup.id + "/" + Date.now() + "_" + Math.random().toString(36).slice(2, 8) + "." + ext;
+    const { error } = await sb.storage.from("chat-files").upload(path, blob, { contentType: blob.type || undefined });
+    if (error) throw error;
+    return sb.storage.from("chat-files").getPublicUrl(path).data.publicUrl;
+  }
+
+  async function sendFile(file) {
+    if (!currentGroup) return;
+    if (file.size > 25 * 1024 * 1024) { alert("Fichier trop lourd (25 Mo maximum)."); return; }
+    try {
+      const url = await uploadToBucket(file, file.name || "fichier");
+      const isImage = (file.type || "").startsWith("image/");
+      const { error } = await sb.from("messages").insert({
+        group_id: currentGroup.id, sender: me.id,
+        type: isImage ? "image" : "file", file_url: url, file_name: file.name || "fichier", content: ""
+      });
+      if (error) throw error;
+    } catch (e) { alert("Envoi du fichier impossible : " + (e.message || e)); }
+  }
+
+  let mediaRecorder = null, recChunks = [], recStream = null;
+  voiceBtn.addEventListener("click", async () => {
+    if (!currentGroup) return;
+    if (mediaRecorder && mediaRecorder.state === "recording") { mediaRecorder.stop(); return; }
+    try { recStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (e) { alert("Micro indisponible ou refusé."); return; }
+    recChunks = [];
+    mediaRecorder = new MediaRecorder(recStream);
+    mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
+    mediaRecorder.onstop = async () => {
+      try { recStream.getTracks().forEach((t) => t.stop()); } catch (e) {}
+      voiceBtn.classList.remove("recording"); voiceBtn.textContent = "🎤";
+      const blob = new Blob(recChunks, { type: "audio/webm" });
+      if (blob.size < 800) return;
+      try {
+        const url = await uploadToBucket(blob, "vocal.webm");
+        const { error } = await sb.from("messages").insert({
+          group_id: currentGroup.id, sender: me.id, type: "audio", file_url: url, file_name: "Message vocal", content: ""
+        });
+        if (error) throw error;
+      } catch (e) { alert("Envoi du vocal impossible : " + (e.message || e)); }
+    };
+    mediaRecorder.start();
+    voiceBtn.classList.add("recording"); voiceBtn.textContent = "⏹";
+  });
 
   // ---------- AJOUT DE MEMBRE ----------
   addMemberBtn.addEventListener("click", () => {
