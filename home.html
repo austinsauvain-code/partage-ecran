@@ -229,6 +229,9 @@
 
     <div class="nav-item active" id="nav-stream">🟣&nbsp; Salon Streaming</div>
 
+    <div class="side-section">BUILD FC</div>
+    <div class="nav-item" id="nav-build-maestro">🎼&nbsp; Maestro</div>
+
     <div class="side-section">DISCUSSIONS <button id="new-group-btn" title="Nouveau groupe">+</button></div>
     <div class="groups" id="groups-list"></div>
 
@@ -246,6 +249,11 @@
     <!-- Streaming -->
     <section class="pane" id="pane-stream">
       <iframe class="stream" id="stream-frame" allow="display-capture; microphone; camera; fullscreen; autoplay; clipboard-write" src="about:blank"></iframe>
+    </section>
+
+    <!-- Build FC -->
+    <section class="pane hidden" id="pane-build">
+      <iframe class="stream" id="build-frame" src="about:blank"></iframe>
     </section>
 
     <!-- Discussion -->
@@ -299,6 +307,7 @@
   const navStream = $("nav-stream"), groupsList = $("groups-list"), newGroupBtn = $("new-group-btn");
   const userAva = $("user-ava"), userName = $("user-name"), logoutBtn = $("logout-btn");
   const paneStream = $("pane-stream"), paneChat = $("pane-chat"), streamFrame = $("stream-frame");
+  const navBuildMaestro = $("nav-build-maestro"), paneBuild = $("pane-build"), buildFrame = $("build-frame");
   const chatAva = $("chat-ava"), chatName = $("chat-name"), chatMeta = $("chat-meta"),
         chatBody = $("chat-body"), msgInput = $("msg-input"), sendBtn = $("send-btn"),
         addMemberBtn = $("add-member-btn"), sidebar = $("sidebar"), menuToggle = $("menu-toggle");
@@ -389,14 +398,28 @@
   // ---------- STREAMING ----------
   function openStream() {
     navStream.classList.add("active");
+    navBuildMaestro.classList.remove("active");
     [...groupsList.querySelectorAll(".group-item")].forEach(el => el.classList.remove("active"));
-    paneChat.classList.add("hidden"); paneStream.classList.remove("hidden");
+    paneChat.classList.add("hidden"); paneBuild.classList.add("hidden"); paneStream.classList.remove("hidden");
     if (streamFrame.src === "about:blank" || !streamFrame.src.endsWith("/index.html")) {
       streamFrame.src = "/index.html";
     }
     closeSidebarMobile();
   }
   navStream.addEventListener("click", openStream);
+
+  // ---------- BUILD FC ----------
+  function openBuild() {
+    navStream.classList.remove("active");
+    navBuildMaestro.classList.add("active");
+    [...groupsList.querySelectorAll(".group-item")].forEach(el => el.classList.remove("active"));
+    paneStream.classList.add("hidden"); paneChat.classList.add("hidden"); paneBuild.classList.remove("hidden");
+    if (buildFrame.src === "about:blank" || !buildFrame.src.endsWith("/fc26-builds.html")) {
+      buildFrame.src = "/fc26-builds.html";
+    }
+    closeSidebarMobile();
+  }
+  navBuildMaestro.addEventListener("click", openBuild);
 
   // ---------- GROUPES ----------
   async function loadGroups() {
@@ -446,7 +469,8 @@
     currentGroup = g;
     renderGroups();
     navStream.classList.remove("active");
-    paneStream.classList.add("hidden"); paneChat.classList.remove("hidden");
+    navBuildMaestro.classList.remove("active");
+    paneStream.classList.add("hidden"); paneBuild.classList.add("hidden"); paneChat.classList.remove("hidden");
     chatName.textContent = g.name;
     chatAva.textContent = (g.name[0] || "#").toUpperCase();
     chatBody.innerHTML = "";

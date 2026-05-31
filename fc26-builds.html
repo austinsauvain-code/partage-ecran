@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FC 26 — Builds Meta</title>
+<style>
+  :root{
+    --bg1:#0a1612; --bg2:#10231c; --bg3:#0c1a20;
+    --panel:rgba(13,28,24,.72); --panel2:rgba(255,255,255,.04);
+    --line:rgba(255,255,255,.10);
+    --txt:#eef3f1; --muted:#9bb0a8;
+    --green:#36d27a; --green2:#5be08e; --orange:#f0a23c; --red:#ef5a6a;
+    --gold1:#f2d27a; --gold2:#c9952f;
+    --accent:#39e0a8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    color:var(--txt);
+    min-height:100vh;
+    background:
+      radial-gradient(1200px 700px at 80% -10%, rgba(57,224,168,.10), transparent 60%),
+      radial-gradient(900px 600px at 0% 110%, rgba(60,120,90,.18), transparent 55%),
+      linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    background-attachment:fixed;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px;}
+  .topbar{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:6px 0 18px;}
+  .crest{width:42px;height:42px;border-radius:10px;flex:none;background:linear-gradient(135deg,#1c3a30,#0e211b);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;}
+  .crest svg{width:24px;height:24px;}
+  .brand{font-weight:800;letter-spacing:.5px;font-size:15px;color:#dfeee8;}
+  .brand b{color:var(--accent);}
+  .arch-name{font-size:22px;font-weight:900;letter-spacing:.3px;margin-left:4px;}
+  .spacer{flex:1;}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center;}
+  .chip b{color:var(--txt);font-weight:700;}
+  .arch-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .arch-pill{border:1px solid var(--line);background:var(--panel2);color:var(--muted);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:default;display:flex;gap:8px;align-items:center;}
+  .arch-pill.active{background:linear-gradient(135deg,rgba(57,224,168,.22),rgba(57,224,168,.06));border-color:rgba(57,224,168,.5);color:#fff;}
+  .arch-pill .soon{font-size:10px;color:#7d9088;border:1px solid var(--line);border-radius:6px;padding:1px 6px;}
+  .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:22px;overflow-x:auto;}
+  .tab{background:none;border:none;color:var(--muted);font-size:15px;font-weight:700;padding:12px 16px;cursor:pointer;position:relative;white-space:nowrap;}
+  .tab.active{color:#fff;}
+  .tab.active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:3px;border-radius:3px;background:var(--accent);}
+  .view{display:none;animation:fade .25s ease;}
+  .view.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  .attr-layout{display:grid;grid-template-columns:1fr 340px;gap:26px;}
+  .attr-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:26px 30px;}
+  .grp-title{font-size:13px;font-weight:800;color:#cfe0d8;letter-spacing:.4px;margin:0 0 12px;}
+  .attr{margin-bottom:14px;cursor:pointer;}
+  .attr-top{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;margin-bottom:5px;}
+  .attr-name{color:#d7e4de;}
+  .attr.key .attr-name{color:#fff;font-weight:700;}
+  .attr.key .attr-name::after{content:" ★";color:var(--accent);font-size:10px;vertical-align:top;}
+  .attr-val{font-weight:800;font-size:13px;}
+  .bar{height:4px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;}
+  .bar > span{display:block;height:100%;border-radius:3px;}
+  .attr.sel{background:rgba(57,224,168,.06);outline:1px solid rgba(57,224,168,.35);border-radius:8px;padding:6px 8px;margin:-6px -8px 8px;}
+  .detail{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;backdrop-filter:blur(8px);height:fit-content;position:sticky;top:16px;}
+  .detail h4{margin:0 0 2px;font-size:13px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;}
+  .detail .big{font-size:58px;font-weight:900;line-height:1;margin:2px 0 10px;}
+  .detail .desc{font-size:13px;color:var(--muted);line-height:1.55;}
+  .detail .row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:8px 0;border-top:1px solid var(--line);}
+  .detail .row b{color:var(--txt);}
+  .related{margin-top:14px;}
+  .related .lbl{font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+  .related .ps{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:7px;color:#dCE7E2;}
+  .ps-layout{display:grid;grid-template-columns:200px 1fr 320px;gap:26px;}
+  .col-title{text-align:center;font-size:12px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin:0 0 16px;}
+  .sig-list{display:flex;flex-direction:column;gap:16px;align-items:center;}
+  .diamond{width:96px;height:96px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;transform:rotate(45deg);border-radius:18px;position:relative;}
+  .diamond .ic{transform:rotate(-45deg);font-weight:900;font-size:22px;}
+  .sig .diamond{background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#3a2a06;box-shadow:0 6px 18px rgba(201,149,47,.3);}
+  .sig-name{font-size:12px;font-weight:700;color:#f1d99a;margin-top:8px;text-align:center;}
+  .sig-item{display:flex;flex-direction:column;align-items:center;}
+  .ps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px 14px;justify-items:center;}
+  .ps-cell{display:flex;flex-direction:column;align-items:center;cursor:pointer;}
+  .ps-cell .diamond{width:78px;height:78px;background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.05));border:1px solid var(--line);color:#eaf4ef;transition:.2s;}
+  .ps-cell.on .diamond{background:linear-gradient(135deg,rgba(57,224,168,.30),rgba(57,224,168,.08));border-color:rgba(57,224,168,.6);box-shadow:0 0 20px rgba(57,224,168,.25);}
+  .ps-cell.sel .diamond{outline:2px solid #fff;}
+  .ps-cell .nm{font-size:11.5px;margin-top:10px;text-align:center;color:#cfe0d8;max-width:96px;}
+  .ps-cell .ic{transform:rotate(-45deg);font-weight:900;font-size:18px;}
+  .ic svg{display:block;}
+  .sig .diamond .ic svg{width:38px;height:38px;}
+  .ps-cell .diamond .ic svg{width:32px;height:32px;}
+  .spec-sig .d span svg{width:24px;height:24px;}
+  .facilities{margin-top:30px;border-top:1px solid var(--line);padding-top:16px;}
+  .facilities .lbl{text-align:center;font-size:12px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:12px;}
+  .fac-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .fac{background:rgba(57,224,168,.1);border:1px solid rgba(57,224,168,.4);border-radius:999px;padding:7px 16px;font-size:13px;font-weight:600;}
+  .spec-layout{display:grid;grid-template-columns:260px 1fr;gap:26px;}
+  .spec-list{display:flex;flex-direction:column;gap:2px;}
+  .spec-item{padding:16px 14px;border-radius:12px;font-size:16px;font-weight:700;color:var(--muted);display:flex;justify-content:space-between;align-items:center;border:1px solid transparent;}
+  .spec-item.locked{color:#5f7269;}
+  .spec-item.active{background:rgba(57,224,168,.07);border-color:rgba(57,224,168,.45);color:#fff;}
+  .spec-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px;backdrop-filter:blur(8px);position:relative;overflow:hidden;}
+  .spec-card .tick{position:absolute;top:18px;right:18px;background:var(--green);color:#06231a;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:900;}
+  .spec-card h3{font-size:26px;margin:0 0 2px;font-weight:900;}
+  .spec-card .insp{color:var(--accent);font-size:13px;margin-bottom:18px;}
+  .spec-sig{display:flex;align-items:center;gap:12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:14px 0;margin-bottom:16px;}
+  .spec-sig .d{width:46px;height:46px;border-radius:10px;transform:rotate(45deg);background:linear-gradient(135deg,var(--gold1),var(--gold2));display:flex;align-items:center;justify-content:center;}
+  .spec-sig .d span{transform:rotate(-45deg);font-weight:900;color:#3a2a06;}
+  .spec-card h5{margin:14px 0 6px;font-size:14px;}
+  .spec-card p{color:var(--muted);font-size:13.5px;line-height:1.6;margin:0 0 8px;}
+  .body-layout{display:grid;grid-template-columns:1fr 1fr;gap:26px;}
+  .hw-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px;text-align:center;}
+  .hw-vals{display:flex;justify-content:center;gap:50px;margin-bottom:8px;}
+  .hw-vals .v{font-size:34px;font-weight:900;}
+  .hw-vals .l{font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+  .effects .erow{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .effects .en{width:150px;font-size:13px;color:#d7e4de;}
+  .effects .eb{flex:1;height:4px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;}
+  .effects .eb span{display:block;height:100%;}
+  .effects .ev{width:34px;text-align:right;font-weight:800;font-size:13px;}
+  .effects .ef{width:42px;text-align:right;font-size:12px;font-weight:700;}
+  .pos{color:var(--green2);} .neg{color:var(--red);}
+  .note{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:14px 16px;font-size:13px;color:#cfe0d8;line-height:1.6;margin-top:22px;}
+  .note b{color:#fff;}
+  .footer{margin-top:30px;font-size:11.5px;color:#73867e;line-height:1.6;text-align:center;}
+  .plan{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-wrap:wrap;gap:6px;}
+  .plan li{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:12px;}
+  .plan li.p1{border-color:rgba(57,224,168,.5);color:#fff;}
+  @media(max-width:960px){
+    .attr-layout{grid-template-columns:1fr;} .detail{position:static;}
+    .attr-cols{grid-template-columns:repeat(2,1fr);}
+    .ps-layout{grid-template-columns:1fr;} .ps-detail-col{display:none;}
+    .spec-layout{grid-template-columns:1fr;} .body-layout{grid-template-columns:1fr;}
+  }
+  @media(max-width:560px){ .attr-cols{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="crest">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#39e0a8" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>
+    </div>
+    <div class="brand">FC 26 · <b>BUILDS META</b></div>
+    <div class="arch-name">Maestro</div>
+    <div class="spacer"></div>
+    <div class="chips">
+      <div class="chip">Poste <b>MC</b></div>
+      <div class="chip">Spé <b>Maestro+</b></div>
+      <div class="chip">Meta <b>S-Tier</b></div>
+    </div>
+  </div>
+
+  <div class="arch-row">
+    <div class="arch-pill active">🎼 Maestro <span>MC</span></div>
+    <div class="arch-pill">♻️ Recycler <span class="soon">bientôt</span></div>
+    <div class="arch-pill">🎨 Creator <span class="soon">bientôt</span></div>
+    <div class="arch-pill">🪄 Magician <span class="soon">bientôt</span></div>
+    <div class="arch-pill">⚡ Spark <span class="soon">bientôt</span></div>
+    <div class="arch-pill">🎯 Attaquants / Ailiers <span class="soon">bientôt</span></div>
+    <div class="arch-pill">🛡️ Défenseurs / Gardiens <span class="soon">bientôt</span></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-t="attributes">Attributs</button>
+    <button class="tab" data-t="playstyles">PlayStyles</button>
+    <button class="tab" data-t="spec">Spécialisations</button>
+    <button class="tab" data-t="body">Physique</button>
+  </div>
+
+  <section class="view active" id="attributes">
+    <div class="attr-layout">
+      <div>
+        <div class="attr-cols" id="attrCols"></div>
+        <div class="note">
+          <b>Ordre de montée (PA) :</b> maxe d'abord les piliers, puis élargis.
+          <ul class="plan">
+            <li class="p1">1· Équilibre</li><li class="p1">2· Contrôle de balle</li><li class="p1">3· Sang-froid</li><li class="p1">4· Agressivité</li>
+            <li>5· Réactions</li><li>6· Dribble</li><li>7· Finition</li><li>8· Passe courte</li><li>9· Passe longue</li><li>10· Vision</li><li>11· Accélération</li>
+          </ul>
+        </div>
+      </div>
+      <aside class="detail" id="attrDetail"></aside>
+    </div>
+  </section>
+
+  <section class="view" id="playstyles">
+    <div class="ps-layout">
+      <div>
+        <div class="col-title">Signature (PlayStyles+)</div>
+        <div class="sig-list" id="sigList"></div>
+        <div class="facilities">
+          <div class="lbl">Infrastructures du club</div>
+          <div class="fac-row"><div class="fac">Première touche</div><div class="fac">Pressing</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="col-title">PlayStyles équipés (8)</div>
+        <div class="ps-grid" id="psGrid"></div>
+      </div>
+      <aside class="detail ps-detail-col" id="psDetail"></aside>
+    </div>
+  </section>
+
+  <section class="view" id="spec">
+    <div class="spec-layout">
+      <div class="spec-list">
+        <div class="spec-item active">Maestro+ <span>✓</span></div>
+        <div class="spec-item">Heartbeat</div>
+        <div class="spec-item locked">Crasher <span>🔒</span></div>
+      </div>
+      <div class="spec-card">
+        <div class="tick">✓</div>
+        <h3>Maestro+</h3>
+        <div class="insp">Inspiré des grands meneurs (Zidane · Kroos · Bonmatí)</div>
+        <div class="spec-sig">
+          <div class="d"><span id="specSigIcon"></span></div>
+          <div><div style="font-weight:700">Tiki Taka+</div><div style="color:var(--muted);font-size:12px">Nouveau PlayStyle Signature</div></div>
+        </div>
+        <h5>Pourquoi c'est le meta</h5>
+        <p>Maestro+ est la spécialisation la plus équilibrée pour un milieu box-to-box orienté possession : elle renforce les passes, la vision et le contrôle de balle tout en gardant assez de présence défensive pour peser dans les deux phases de jeu.</p>
+        <h5>Profil</h5>
+        <p>Plaque tournante du terrain : tempo, passes décisives, premières touches propres et calme sous pression. Variante <b>Heartbeat</b> (inspirée de Nedvěd) si tu veux un boost Accélération / Réactions / Endurance sur tacle réussi.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="body">
+    <div class="body-layout">
+      <div class="hw-card">
+        <div class="hw-vals">
+          <div><div class="v">1,70 m</div><div class="l">Taille</div></div>
+          <div><div class="v">65 kg</div><div class="l">Poids</div></div>
+        </div>
+        <p style="color:var(--muted);font-size:13px;line-height:1.6;margin-top:14px">
+          Meta agilité : petit + léger = vivacité et accélération maximales.
+          Tu peux monter jusqu'à <b style="color:#fff">1,88 m / 73 kg</b> si tu veux plus de présence aérienne et physique (au prix d'un peu d'agilité).
+        </p>
+      </div>
+      <div class="hw-card" style="text-align:left">
+        <h4 style="margin:0 0 16px;font-size:13px;letter-spacing:1px;color:var(--muted)">EFFET SUR LES ATTRIBUTS DE BASE</h4>
+        <div class="effects" id="bodyEffects"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    Build basé sur le meta communautaire FC 26 Clubs — état mai 2026.
+    Les valeurs d'attributs sont des <b>cibles recommandées</b> (priorité ★) ; le meta évolue avec les patchs.
+  </div>
+</div>
+
+<script>
+const KEY = new Set(["Agilité","Équilibre","Réactions","Contrôle de balle","Sang-froid","Vision","Passe courte","Passe longue","Accélération","Endurance","Agressivité"]);
+const groups = [
+  ["Contrôle de balle",[["Agilité",96],["Équilibre",95],["Réactions",90],["Contrôle de balle",95],["Dribble",90],["Sang-froid",99]]],
+  ["Finition",[["Placement off.",78],["Finition",85],["Puiss. de tir",85],["Tirs de loin",80],["Volées",65],["Penaltys",65]]],
+  ["Passes",[["Vision",95],["Centres",78],["Coups francs",78],["Passe courte",95],["Passe longue",92],["Effet",85]]],
+  ["Défense",[["Interceptions",75],["Jeu de tête",52],["Placement déf.",68],["Tacle debout",78],["Tacle glissé",65]]],
+  ["Vitesse",[["Accélération",92],["Vitesse de pointe",85]]],
+  ["Physique",[["Détente",58],["Puissance",68],["Endurance",95],["Agressivité",90]]]
+];
+const descs = {
+  "Agilité":"Vitesse de changement de direction. Pilier du Maestro pour s'orienter dans les petits espaces.",
+  "Équilibre":"Stabilité dans les duels et les dribbles serrés. À maxer en premier.",
+  "Sang-froid":"Calme sous pression : limite les erreurs de passe/contrôle quand on te presse. Priorité absolue.",
+  "Contrôle de balle":"Qualité de la conduite et des contrôles. Base du jeu de possession.",
+  "Vision":"Qualité et portée des passes lues. Cœur du rôle de meneur.",
+  "Passe courte":"Précision des passes courtes — la monnaie du Tiki Taka.",
+  "Passe longue":"Précision des longs ballons et changements de jeu.",
+  "Accélération":"Vitesse sur les premiers mètres. Boostée par le petit gabarit.",
+  "Agressivité":"Intensité défensive et récupération. À maxer pour le box-to-box.",
+  "Endurance":"Indispensable pour couvrir tout le terrain 90 minutes.",
+  "Réactions":"Vitesse de réaction aux ballons relâchés. Très rentable."
+};
+const relPS = {
+  "Vision":["Passe incisive","Passe laser+","Passe longue+"],
+  "Passe courte":["Tiki Taka+","Créatif"],
+  "Sang-froid":["Technique","Première touche"]
+};
+function barColor(v){ if(v>=85)return "linear-gradient(90deg,#36d27a,#5be08e)"; if(v>=70)return "linear-gradient(90deg,#8fd06a,#b6e08a)"; if(v>=50)return "linear-gradient(90deg,#f0a23c,#f5c06a)"; return "linear-gradient(90deg,#ef5a6a,#f58a8a)";}
+
+const cols = document.getElementById('attrCols');
+groups.forEach(([g,items])=>{
+  const div=document.createElement('div');
+  div.innerHTML=`<div class="grp-title">${g}</div>`;
+  items.forEach(([n,v])=>{
+    const a=document.createElement('div');
+    a.className="attr"+(KEY.has(n)?" key":"");
+    a.innerHTML=`<div class="attr-top"><span class="attr-name">${n}</span><span class="attr-val" style="color:${v>=85?'#5be08e':v>=70?'#cfe0d8':'#f0a23c'}">${v}</span></div><div class="bar"><span style="width:${v}%;background:${barColor(v)}"></span></div>`;
+    a.onclick=()=>selectAttr(n,v,a);
+    div.appendChild(a);
+  });
+  cols.appendChild(div);
+});
+function selectAttr(n,v,el){
+  document.querySelectorAll('.attr.sel').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+  const rel=relPS[n];
+  document.getElementById('attrDetail').innerHTML=
+    `<h4>${n}</h4><div class="big">${v}</div>`+
+    (KEY.has(n)?`<div style="color:var(--accent);font-size:12px;margin:-6px 0 12px;font-weight:700">★ Attribut clé du build</div>`:``)+
+    `<div class="desc">${descs[n]||"Attribut secondaire — à monter après les piliers du build."}</div>`+
+    `<div class="row"><span>Cible recommandée</span><b>${v}</b></div>`+
+    (rel?`<div class="related"><div class="lbl">PlayStyles liés</div>${rel.map(p=>`<div class="ps">◈ ${p}</div>`).join('')}</div>`:``);
+}
+
+const S='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">';
+const ICONS={
+  arrowR:  S+'<path d="M4 12h12"/><path d="M13 6l6 6-6 6"/></svg>',
+  arcArrow:S+'<path d="M4 18c5-9 10-11 16-11"/><path d="M14 7h6v6"/></svg>',
+  cycle:   S+'<path d="M19 9A7 7 0 0 0 7 6.5"/><path d="M5 15a7 7 0 0 0 12 2.5"/><path d="M7 3.5V7H3.5"/><path d="M17 20.5V17h3.5"/></svg>',
+  pin:     S+'<path d="M12 21s6.5-5.8 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 15.2 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.3"/></svg>',
+  bulb:    S+'<path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.8.7 1 1.4 1 2.5h6c0-1.1.2-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>',
+  gear:    S+'<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.1 5.1l2.1 2.1M16.8 16.8l2.1 2.1M18.9 5.1l-2.1 2.1M7.2 16.8l-2.1 2.1"/></svg>',
+  chevrons:S+'<path d="M5 6l6 6-6 6"/><path d="M12 6l6 6-6 6"/></svg>',
+  rocket:  S+'<path d="M5.5 14.5c-1.5 1-2 4.5-2 4.5s3.5-.5 4.5-2"/><path d="M9 15l-3-3c1-5 5-9 10-9 0 5-4 9-9 10z"/><circle cx="14.5" cy="9.5" r="1.5"/></svg>',
+  shield:  S+'<path d="M12 3l7 3v5c0 5-3.5 7.6-7 9-3.5-1.4-7-4-7-9V6z"/><path d="M12 8.5v6M9 11.5h6"/></svg>',
+  finesse: S+'<path d="M4 18C8 8 14 5 20 6"/><path d="M16.5 5l3.5 1-1 3.5"/></svg>',
+  lowshot: S+'<circle cx="5" cy="16" r="1.8" fill="currentColor"/><path d="M7 16h9"/><path d="M13 12.5l4 3.5-4 3.5"/></svg>'
+};
+const equipped=[
+  ["Passe incisive","pin","Passes en profondeur plus précises, passes vrillées plus courbées, passes de précision plus rapides."],
+  ["Créatif","bulb","Débloque des passes créatives (extérieur du pied, no-look) plus fiables."],
+  ["Technique","gear","Meilleurs contrôles orientés et conduite près du corps dans les petits espaces."],
+  ["Rapide","chevrons","Conserve mieux la vitesse balle au pied lors des accélérations."],
+  ["Démarrage rapide","rocket","Accélération explosive sur les premiers appuis."],
+  ["Récupérateur","shield","Récupération et présence renforcées dans les duels (utile box-to-box)."],
+  ["Frappe enroulée","finesse","Frappes enroulées plus précises et plus mortelles."],
+  ["Frappe tendue","lowshot","Frappes tendues à ras de terre, difficiles à arrêter."]
+];
+const sig=[["Passe laser+","arrowR"],["Passe longue+","arcArrow"],["Tiki Taka+","cycle"]];
+const sigList=document.getElementById('sigList');
+sig.forEach(([n,ic])=>{
+  const d=document.createElement('div');d.className="sig-item sig";
+  d.innerHTML=`<div class="diamond"><span class="ic">${ICONS[ic]||ic}</span></div><div class="sig-name">${n}</div>`;
+  sigList.appendChild(d);
+});
+const grid=document.getElementById('psGrid');
+equipped.forEach(([n,ic,desc])=>{
+  const c=document.createElement('div');c.className="ps-cell on";
+  c.innerHTML=`<div class="diamond"><span class="ic">${ICONS[ic]||ic}</span></div><div class="nm">${n}</div>`;
+  c.onclick=()=>{document.querySelectorAll('.ps-cell.sel').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');
+    document.getElementById('psDetail').innerHTML=`<h4>PlayStyle</h4><div style="font-size:22px;font-weight:900;margin:2px 0 12px">${n}</div><div class="desc">${desc}</div>`;};
+  grid.appendChild(c);
+});
+document.getElementById('psDetail').innerHTML=`<h4>PlayStyle</h4><div style="font-size:22px;font-weight:900;margin:2px 0 12px">Passe incisive</div><div class="desc">${equipped[0][2]}</div>`;
+
+const eff=[["Accélération",92,"+4"],["Agilité",96,"+4"],["Équilibre",95,"+2"],["Détente",58,"-4"],["Vitesse de pointe",85,"+1"],["Puissance",68,"-4"]];
+const be=document.getElementById('bodyEffects');
+eff.forEach(([n,v,e])=>{
+  const r=document.createElement('div');r.className="erow";
+  r.innerHTML=`<div class="en">${n}</div><div class="ev">${v}</div><div class="eb"><span style="width:${v}%;background:${barColor(v)}"></span></div><div class="ef ${e.startsWith('+')?'pos':'neg'}">${e}</div>`;
+  be.appendChild(r);
+});
+
+document.getElementById('specSigIcon').innerHTML=ICONS.cycle;
+selectAttr("Sang-froid",99,document.querySelector('.attr.key'));
+
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.t).classList.add('active');
+  };
+});
+</script>
+</body>
+</html>
