@@ -510,9 +510,10 @@ function valFor(b,name){ if(b.k1.includes(name))return 95; if(b.k2.includes(name
 
 function renderSelector(active){
   const groups=["Milieu","Attaquant","Ailier","Défenseur","Gardien"];
+  const PLUR={Milieu:"Milieux",Attaquant:"Attaquants",Ailier:"Ailiers","Défenseur":"Défenseurs",Gardien:"Gardiens"};
   let html="";
   groups.forEach(g=>{
-    html+=`<div class="group-lbl">${g}s</div><div class="arch-row">`;
+    html+=`<div class="group-lbl">${PLUR[g]||g}</div><div class="arch-row">`;
     BUILDS.filter(b=>b.grp===g).forEach(b=>{
       html+=`<div class="arch-pill${b.key===active?' active':''}" data-k="${b.key}"><span class="pic">${icon(ARCH_ICON[b.key]||"dot")}</span><span class="anm">${b.name}</span><span class="ps">${b.pos}</span></div>`;
     });
