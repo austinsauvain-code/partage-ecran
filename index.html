@@ -130,7 +130,13 @@
     align-items: center;
     gap: 8px;
     z-index: 2;
+    opacity: 0;
+    transition: opacity .25s ease;
+    pointer-events: none;
   }
+  /* Les contrôles n'apparaissent qu'au survol (ordi) ou au toucher (mobile/TV) */
+  .video-wrap:hover .video-controls,
+  .video-wrap.show-controls .video-controls { opacity: 1; pointer-events: auto; }
   .ctrl-btn {
     background: rgba(0,0,0,.55);
     color: #fff;
@@ -141,7 +147,23 @@
     cursor: pointer;
   }
   .ctrl-btn:hover { background: rgba(124,58,237,.9); }
-  .vol-slider { width: 90px; accent-color: var(--accent-2); cursor: pointer; }
+  .vol-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 110px; height: 6px; border-radius: 999px; cursor: pointer;
+    background: linear-gradient(to right,
+      var(--accent-2) 0%, var(--accent-2) var(--vol-fill, 50%),
+      rgba(255,255,255,.35) var(--vol-fill, 50%), rgba(255,255,255,.35) 100%);
+  }
+  .vol-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; border: none; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,.4);
+  }
+  .vol-slider::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; border: none; cursor: pointer;
+  }
   /* En plein écran, le conteneur occupe tout l'écran et la vidéo le remplit au maximum */
   .video-wrap:fullscreen,
   .video-wrap:-webkit-full-screen {
@@ -948,12 +970,32 @@
     return lines.join("\r\n");
   }
 
+  // ===== Affichage des contrôles : seulement au toucher / survol, puis auto-masquage =====
+  let controlsTimer = null;
+  function showControls() {
+    videoWrap.classList.add("show-controls");
+    clearTimeout(controlsTimer);
+    controlsTimer = setTimeout(() => videoWrap.classList.remove("show-controls"), 3000);
+  }
+  ["pointerdown", "touchstart", "mousemove"].forEach((ev) =>
+    videoWrap.addEventListener(ev, showControls, { passive: true })
+  );
+
+  // ===== Remplissage visuel du curseur de volume (la barre va bien jusqu'au bout) =====
+  function paintVolume() {
+    const pct = (parseInt(volSlider.value, 10) / parseInt(volSlider.max, 10)) * 100;
+    volSlider.style.setProperty("--vol-fill", pct + "%");
+  }
+  paintVolume();
+
   // ===== Contrôle du volume (bouton son + curseur, ampli jusqu'à 300 %) =====
   volSlider.addEventListener("input", () => {
     volume = parseInt(volSlider.value, 10) / 100;
     if (volume > 0 && !soundOn) { soundOn = true; updateMuteBtn(); }
     if (audioCtx) audioCtx.resume().catch(() => {});
     applyVolume();
+    paintVolume();
+    showControls(); // reste visible pendant le réglage
   });
   muteBtn.addEventListener("click", () => {
     soundOn = !soundOn;
