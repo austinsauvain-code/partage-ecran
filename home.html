@@ -156,13 +156,28 @@
   .member-list { max-height: 180px; overflow-y: auto; margin-top: 6px; }
   .member-list .m { padding: 8px 4px; font-size: 14px; border-bottom: 1px solid var(--border); }
   .note { font-size: 12px; color: var(--muted); margin: 0 0 14px; }
+  .menu-toggle { display: none; }
+  .mobile-menu { display: none; }
+  .sidebar-backdrop { display: none; }
   @media (max-width: 760px) {
     .shell { grid-template-columns: 1fr; }
-    .sidebar { position: fixed; z-index: 40; width: 270px; height: 100%; transform: translateX(-100%); transition: transform .2s; }
+    .sidebar {
+      position: fixed; top: 0; left: 0; z-index: 60; width: 80%; max-width: 300px; height: 100%;
+      transform: translateX(-100%); transition: transform .25s ease; box-shadow: 0 0 40px rgba(0,0,0,.5);
+    }
     .sidebar.open { transform: none; }
-    .menu-toggle { display: inline-flex !important; }
+    .sidebar-backdrop.show { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,.5); }
+    .mobile-menu {
+      display: flex; align-items: center; justify-content: center;
+      position: fixed; top: 12px; left: 12px; z-index: 50; cursor: pointer;
+      width: 42px; height: 42px; border-radius: 12px;
+      background: rgba(18,9,38,.65); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      color: #fff; font-size: 20px; border: 1px solid rgba(255,255,255,.22);
+    }
+    .chat-top { padding-left: 66px; }
+    .chat-top .gname { font-size: 15px; }
+    .chat-top #add-member-btn { font-size: 13px; padding: 8px 10px; }
   }
-  .menu-toggle { display: none; background: #f3f0fb; color: var(--accent); width: 38px; height: 38px; border-radius: 10px; font-size: 18px; align-items: center; justify-content: center; }
 </style>
 </head>
 <body>
@@ -216,6 +231,9 @@
       <button id="logout-btn" title="Se déconnecter">⎋</button>
     </div>
   </aside>
+
+  <button class="mobile-menu" id="mobile-menu" aria-label="Ouvrir le menu">☰</button>
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
   <main class="main">
     <!-- Streaming -->
@@ -603,8 +621,15 @@
 
   // ---------- DIVERS ----------
   function escapeHtml(s) { return (s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
-  menuToggle.addEventListener("click", () => sidebar.classList.toggle("open"));
-  function closeSidebarMobile() { sidebar.classList.remove("open"); }
+  const mobileMenu = $("mobile-menu"), backdrop = $("sidebar-backdrop");
+  function setSidebar(open) {
+    sidebar.classList.toggle("open", open);
+    backdrop.classList.toggle("show", open);
+  }
+  menuToggle.addEventListener("click", () => setSidebar(!sidebar.classList.contains("open")));
+  mobileMenu.addEventListener("click", () => setSidebar(!sidebar.classList.contains("open")));
+  backdrop.addEventListener("click", () => setSidebar(false));
+  function closeSidebarMobile() { setSidebar(false); }
 
   // ---------- DÉMARRAGE ----------
   (async () => {
