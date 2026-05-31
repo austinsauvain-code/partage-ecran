@@ -665,17 +665,18 @@
     }
   }
 
-  // Vidéo : débit élevé, et on PRIVILÉGIE LA FLUIDITÉ (on garde les images/seconde,
-  // quitte à baisser un peu la définition si le réseau fatigue) — idéal pour le sport.
+  // Vidéo : débit élevé, et on PRIVILÉGIE LA NETTETÉ (on garde la définition pleine,
+  // quitte à baisser les images/seconde si le réseau fatigue) — image nette en plein écran.
   async function boostVideoSender(pc, track) {
     const sender = pc.getSenders().find((s) => s.track === track);
     if (!sender) return;
     try {
       const params = sender.getParameters();
       if (!params.encodings || !params.encodings.length) params.encodings = [{}];
-      params.encodings[0].maxBitrate = 8000000;   // ~8 Mbps
+      params.encodings[0].maxBitrate = 14000000;   // ~14 Mbps (image plus détaillée)
       params.encodings[0].maxFramerate = 30;
-      params.degradationPreference = "maintain-framerate"; // fluidité prioritaire
+      params.encodings[0].scaleResolutionDownBy = 1; // jamais de réduction de définition
+      params.degradationPreference = "maintain-resolution"; // netteté prioritaire
       await sender.setParameters(params);
     } catch (e) { /* certains navigateurs exigent une négo préalable : sans gravité */ }
   }
@@ -794,11 +795,10 @@
           sampleRate: 48000
         }
       });
-      // 'motion' indique à l'encodeur de privilégier la fluidité (images/seconde),
-      // important pour du sport/vidéo : on garde le mouvement net plutôt qu'une
-      // image figée plus définie mais saccadée.
+      // 'detail' indique à l'encodeur de privilégier la NETTETÉ (définition/précision)
+      // plutôt que les images/seconde : image bien plus claire en plein écran.
       const vTrack = screenStream.getVideoTracks()[0];
-      if (vTrack && "contentHint" in vTrack) vTrack.contentHint = "motion";
+      if (vTrack && "contentHint" in vTrack) vTrack.contentHint = "detail";
     } catch (e) {
       setStatus("Partage annulé ou refusé.");
       return;
