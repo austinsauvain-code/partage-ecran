@@ -321,11 +321,18 @@
   }
   #room-screen .chat-input input::placeholder { color: rgba(255,255,255,.5); }
   @media (max-width: 860px) {
-    #room-screen .layout { grid-template-columns: 1fr; }
+    /* Empilé verticalement : la vidéo en haut, la discussion en dessous (pas d'overlay) */
+    #room-screen .layout {
+      display: flex; flex-direction: column; grid-template-columns: none; position: static;
+    }
+    #room-screen .layout > div:first-child {
+      flex: 1 1 56%; min-height: 0;
+    }
+    #room-screen .video-wrap { flex: 1; min-height: 0; }
     #room-screen .chat {
-      position: absolute; left: 0; right: 0; bottom: 0; height: 46%;
+      position: static; flex: 1 1 44%; min-height: 0; height: auto;
       border-left: none; border-top: 1px solid rgba(255,255,255,.1);
-      background: linear-gradient(to top, rgba(8,5,16,.97), rgba(8,5,16,.55));
+      background: rgba(8,5,16,.97);
     }
     #room-screen .status { display: none; }
   }
