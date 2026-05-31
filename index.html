@@ -372,9 +372,9 @@
           <button class="btn-primary btn-block" id="join-btn">Entrer dans le salon →</button>
         </div>
         <div class="hero-features">
-          <span>🖥️ Partage d'écran</span>
-          <span>🎙️ Voix</span>
-          <span>💬 Chat</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-3px;margin-right:7px"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Partage d'écran</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-3px;margin-right:7px"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Voix</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-3px;margin-right:7px"><path d="M4 5h16v11H9l-4 4z"/></svg>Chat</span>
         </div>
       </div>
 
@@ -420,7 +420,7 @@
       <span class="room-pill">Salon : <b id="room-name"></b></span>
       <span class="room-pill" id="peers-pill">Seul pour l'instant</span>
       <span class="spacer"></span>
-      <button class="btn-ghost" id="mic-btn">🎙️ Activer le micro</button>
+      <button class="btn-ghost" id="mic-btn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/><path d="M3 3l18 18"/></svg>Activer le micro</button>
       <button class="btn-primary" id="share-btn">Partager mon écran</button>
       <button class="btn-danger hidden" id="stop-btn">Arrêter le partage</button>
       <button class="btn-ghost" id="leave-btn">Quitter</button>
@@ -431,9 +431,9 @@
         <div class="video-wrap" id="video-wrap">
           <span class="badge hidden" id="video-badge"></span>
           <div class="video-controls">
-            <button class="ctrl-btn" id="mute-btn" title="Couper / activer le son">🔊</button>
+            <button class="ctrl-btn" id="mute-btn" title="Couper / activer le son"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9.5a3.5 3.5 0 0 1 0 5M19 7a7 7 0 0 1 0 10"/></svg></button>
             <input class="vol-slider" id="vol-slider" type="range" min="0" max="300" value="150" title="Volume" />
-            <button class="ctrl-btn" id="fs-btn" title="Plein écran (ou double-clic sur la vidéo)">⛶ Plein écran</button>
+            <button class="ctrl-btn" id="fs-btn" title="Plein écran (ou double-clic sur la vidéo)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Plein écran</button>
           </div>
           <div class="placeholder" id="placeholder">
             Aucun écran partagé pour le moment.<br />
@@ -784,13 +784,21 @@
     updateMicBtn();
   });
 
+  const UI = {
+    mic:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+    micoff:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/><path d="M3 3l18 18"/></svg>',
+    vol:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9.5a3.5 3.5 0 0 1 0 5M19 7a7 7 0 0 1 0 10"/></svg>',
+    mute:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>',
+    fs:'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+    fsx:'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>'
+  };
   function updateMicBtn() {
     if (micEnabled) {
-      micBtn.textContent = "🎙️ Micro activé";
+      micBtn.innerHTML = UI.mic + "Micro activé";
       micBtn.classList.remove("btn-ghost");
       micBtn.classList.add("btn-primary");
     } else {
-      micBtn.textContent = "🔇 Micro coupé";
+      micBtn.innerHTML = UI.micoff + "Micro coupé";
       micBtn.classList.remove("btn-primary");
       micBtn.classList.add("btn-ghost");
     }
@@ -1003,7 +1011,7 @@
     updateMuteBtn();
     applyVolume();
   });
-  function updateMuteBtn() { muteBtn.textContent = soundOn ? "🔊" : "🔇"; }
+  function updateMuteBtn() { muteBtn.innerHTML = soundOn ? UI.vol : UI.mute; }
 
   // ===== Plein écran (desktop + mobile) =====
   function isFsActive() {
@@ -1041,7 +1049,7 @@
   fsBtn.addEventListener("click", toggleFullscreen);
   video.addEventListener("dblclick", toggleFullscreen);
   function updateFsLabel() {
-    fsBtn.textContent = isFsActive() ? "⮌ Quitter" : "⛶ Plein écran";
+    fsBtn.innerHTML = isFsActive() ? UI.fsx + "Quitter" : UI.fs + "Plein écran";
   }
   document.addEventListener("fullscreenchange", updateFsLabel);
   document.addEventListener("webkitfullscreenchange", updateFsLabel);
