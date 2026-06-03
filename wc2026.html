@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Coupe du Monde 2026 — Calendrier</title>
+<title>Coupe du Monde 2026 · Calendrier</title>
 <style>
   :root{
     --bg:#0a0a0b; --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.16);
@@ -36,6 +36,7 @@
   .day-h{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:6px;}
   .match{display:flex;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid var(--line);}
   .mgrp{flex:none;width:54px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);border:1px solid var(--line);padding:4px 0;text-align:center;}
+  .mtime{flex:none;width:52px;font-size:13px;font-weight:700;color:var(--accent);text-align:center;letter-spacing:.5px;}
   .mteams{flex:1;display:flex;align-items:center;gap:12px;font-size:15px;min-width:0;}
   .mteams .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .mteams .t.away{text-align:right;}
@@ -88,8 +89,8 @@
   </section>
 
   <div class="footer">
-    Calendrier officiel de la Coupe du Monde 2026 (11 juin – 19 juillet, USA · Canada · Mexique). Source : calendrier FIFA / Wikipédia.
-    Heures de coup d'envoi non affichées. Classements à 0 tant que le tournoi n'a pas commencé.
+    Calendrier officiel de la Coupe du Monde 2026 (11 juin au 19 juillet, USA · Canada · Mexique).
+    Horaires de coup d'envoi indiqués en heure de Paris. Certains horaires restent à confirmer par la FIFA (notés « à déf. »). Classements à 0 tant que le tournoi n'a pas commencé.
   </div>
 </div>
 
@@ -110,46 +111,124 @@
     L:[["Angleterre","gb-eng"],["Croatie","hr"],["Ghana","gh"],["Panama","pa"]]
   };
   function flag(code){ return `<img class="flag" src="https://flagcdn.com/40x30/${code}.png" srcset="https://flagcdn.com/80x60/${code}.png 2x" alt="" loading="lazy">`; }
-  // jours de juin pour [J1m1, J1m2, J2m1, J2m2, J3m1, J3m2]
-  const DATES = {
-    A:[11,11,18,18,24,24], B:[12,13,18,18,24,24], C:[13,13,19,19,24,24],
-    D:[12,13,19,19,25,25], E:[14,14,20,20,25,25], F:[14,14,20,20,25,25],
-    G:[15,15,21,21,26,26], H:[15,15,21,21,26,26], I:[16,16,22,22,26,26],
-    J:[16,16,22,22,27,27], K:[17,17,23,23,27,27], L:[17,17,23,23,27,27]
-  };
-  // schéma officiel des affrontements (indices d'équipe)
-  const PAIR = [[0,1],[2,3],[0,2],[3,1],[3,0],[1,2]];
+  // Table nom -> code drapeau (construite depuis GROUPS)
+  const NAME2CODE = {};
+  Object.values(GROUPS).forEach(arr => arr.forEach(([n,c]) => NAME2CODE[n] = c));
 
-  const matches = [];
-  for (const g in GROUPS){
-    const t = GROUPS[g], d = DATES[g];
-    PAIR.forEach((p, i) => matches.push({ day:d[i], g, h:t[p[0]], a:t[p[1]] }));
-  }
-  matches.sort((x,y)=>x.day-y.day);
+  // Calendrier officiel phase de groupes, horaires en HEURE DE PARIS.
+  // Chaque jour : { d:libellé, m:[ [heure, groupe, domicile, extérieur], ... ] }
+  const DAYS = [
+    { d:"Jeudi 11 juin 2026", m:[
+      ["21h00","A","Mexique","Afrique du Sud"] ]},
+    { d:"Vendredi 12 juin 2026", m:[
+      ["04h00","A","Corée du Sud","Tchéquie"],
+      ["21h00","B","Canada","Bosnie-Herzégovine"] ]},
+    { d:"Samedi 13 juin 2026", m:[
+      ["00h00","C","Brésil","Maroc"],
+      ["03h00","D","États-Unis","Paraguay"],
+      ["21h00","B","Qatar","Suisse"] ]},
+    { d:"Dimanche 14 juin 2026", m:[
+      ["01h00","E","Côte d'Ivoire","Équateur"],
+      ["03h00","C","Haïti","Écosse"],
+      ["06h00","D","Australie","Turquie"],
+      ["19h00","E","Allemagne","Curaçao"],
+      ["22h00","F","Pays-Bas","Japon"] ]},
+    { d:"Lundi 15 juin 2026", m:[
+      ["00h00","H","Arabie saoudite","Uruguay"],
+      ["04h00","F","Suède","Tunisie"],
+      ["18h00","H","Espagne","Cap-Vert"],
+      ["21h00","G","Belgique","Égypte"] ]},
+    { d:"Mardi 16 juin 2026", m:[
+      ["00h00","I","Irak","Norvège"],
+      ["03h00","G","Iran","Nouvelle-Zélande"],
+      ["21h00","I","France","Sénégal"] ]},
+    { d:"Mercredi 17 juin 2026", m:[
+      ["01h00","L","Ghana","Panama"],
+      ["03h00","J","Argentine","Algérie"],
+      ["06h00","J","Autriche","Jordanie"],
+      ["19h00","K","Portugal","RD Congo"],
+      ["22h00","L","Angleterre","Croatie"] ]},
+    { d:"Jeudi 18 juin 2026", m:[
+      ["00h00","B","Canada","Qatar"],
+      ["04h00","K","Ouzbékistan","Colombie"],
+      ["18h00","A","Tchéquie","Afrique du Sud"],
+      ["21h00","B","Suisse","Bosnie-Herzégovine"] ]},
+    { d:"Vendredi 19 juin 2026", m:[
+      ["00h00","C","Écosse","Maroc"],
+      ["03h00","A","Mexique","Corée du Sud"],
+      ["21h00","D","États-Unis","Australie"] ]},
+    { d:"Samedi 20 juin 2026", m:[
+      ["02h30","C","Brésil","Haïti"],
+      ["05h00","D","Turquie","Paraguay"],
+      ["19h00","F","Pays-Bas","Suède"],
+      ["22h00","E","Allemagne","Côte d'Ivoire"] ]},
+    { d:"Dimanche 21 juin 2026", m:[
+      ["00h00","H","Uruguay","Cap-Vert"],
+      ["06h00","F","Tunisie","Japon"],
+      ["18h00","H","Espagne","Arabie saoudite"],
+      ["21h00","G","Belgique","Iran"],
+      ["à déf.","E","Équateur","Curaçao"] ]},
+    { d:"Lundi 22 juin 2026", m:[
+      ["03h00","G","Nouvelle-Zélande","Égypte"],
+      ["19h00","J","Argentine","Autriche"],
+      ["23h00","I","France","Irak"] ]},
+    { d:"Mardi 23 juin 2026", m:[
+      ["01h00","L","Panama","Croatie"],
+      ["05h00","J","Jordanie","Algérie"],
+      ["19h00","K","Portugal","Ouzbékistan"],
+      ["22h00","L","Angleterre","Ghana"],
+      ["à déf.","I","Norvège","Sénégal"] ]},
+    { d:"Mercredi 24 juin 2026", m:[
+      ["00h00","C","Maroc","Haïti"],
+      ["00h00","C","Écosse","Brésil"],
+      ["04h00","K","Colombie","RD Congo"],
+      ["21h00","B","Bosnie-Herzégovine","Qatar"],
+      ["21h00","B","Suisse","Canada"] ]},
+    { d:"Jeudi 25 juin 2026", m:[
+      ["01h00","F","Tunisie","Pays-Bas"],
+      ["01h00","F","Japon","Suède"],
+      ["03h00","A","Afrique du Sud","Corée du Sud"],
+      ["03h00","A","Tchéquie","Mexique"],
+      ["22h00","E","Curaçao","Côte d'Ivoire"],
+      ["22h00","E","Équateur","Allemagne"] ]},
+    { d:"Vendredi 26 juin 2026", m:[
+      ["04h00","D","Turquie","États-Unis"],
+      ["04h00","D","Paraguay","Australie"],
+      ["21h00","I","Sénégal","Irak"],
+      ["21h00","I","Norvège","France"] ]},
+    { d:"Samedi 27 juin 2026", m:[
+      ["01h30","K","RD Congo","Ouzbékistan"],
+      ["01h30","K","Colombie","Portugal"],
+      ["05h00","G","Nouvelle-Zélande","Belgique"],
+      ["05h00","G","Égypte","Iran"],
+      ["23h00","L","Croatie","Ghana"],
+      ["23h00","L","Panama","Angleterre"],
+      ["à déf.","H","Cap-Vert","Arabie saoudite"],
+      ["à déf.","H","Uruguay","Espagne"] ]},
+    { d:"Dimanche 28 juin 2026", m:[
+      ["04h00","J","Jordanie","Argentine"],
+      ["04h00","J","Algérie","Autriche"] ]}
+  ];
 
-  // Rendu calendrier par date
+  // Rendu calendrier par date (heure de Paris)
   const calBody = document.getElementById("calBody");
-  let curDay = null, dayEl = null;
-  matches.forEach(m=>{
-    if (m.day !== curDay){
-      curDay = m.day;
-      dayEl = document.createElement("div");
-      dayEl.className = "day";
-      dayEl.innerHTML = `<div class="day-h">${m.day} juin 2026</div>`;
-      calBody.appendChild(dayEl);
-    }
-    const row = document.createElement("div");
-    row.className = "match";
-    row.innerHTML = `<span class="mgrp">Gr. ${m.g}</span><div class="mteams"><span class="t">${flag(m.h[1])}${m.h[0]}</span><span class="vs">VS</span><span class="t away">${m.a[0]}${flag(m.a[1])}</span></div>`;
-    dayEl.appendChild(row);
+  DAYS.forEach(day=>{
+    const dayEl = document.createElement("div");
+    dayEl.className = "day";
+    let html = `<div class="day-h">${day.d}</div>`;
+    day.m.forEach(([time,g,h,a])=>{
+      html += `<div class="match"><span class="mgrp">Gr. ${g}</span><span class="mtime">${time}</span><div class="mteams"><span class="t">${flag(NAME2CODE[h])}${h}</span><span class="vs">VS</span><span class="t away">${a}${flag(NAME2CODE[a])}</span></div></div>`;
+    });
+    dayEl.innerHTML = html;
+    calBody.appendChild(dayEl);
   });
 
   // Phase finale (dates officielles, équipes à déterminer)
   const KO = [
-    ["Barrages (32es)","28 juin – 3 juillet"],
-    ["Huitièmes de finale","4 – 7 juillet"],
-    ["Quarts de finale","9 – 11 juillet"],
-    ["Demi-finales","14 – 15 juillet"],
+    ["Barrages (32es)","28 juin au 3 juillet"],
+    ["Huitièmes de finale","4 au 7 juillet"],
+    ["Quarts de finale","9 au 11 juillet"],
+    ["Demi-finales","14 et 15 juillet"],
     ["Match pour la 3e place","18 juillet"],
     ["Finale","19 juillet · New York / New Jersey"]
   ];
