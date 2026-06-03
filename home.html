@@ -556,17 +556,20 @@
     bubble.className = "bubble";
     if (m.type === "image" && m.file_url) {
       bubble.classList.add("media");
-      const a = document.createElement("a"); a.href = m.file_url; a.target = "_blank"; a.rel = "noopener";
-      const img = document.createElement("img"); img.className = "chat-img"; img.src = m.file_url; img.alt = m.file_name || "image"; img.loading = "lazy";
+      const a = document.createElement("a"); a.target = "_blank"; a.rel = "noopener";
+      const img = document.createElement("img"); img.className = "chat-img"; img.alt = m.file_name || "image"; img.loading = "lazy";
       a.appendChild(img); bubble.appendChild(a);
+      signedUrl(m.file_url).then(u => { if (u) { a.href = u; img.src = u; } });
     } else if (m.type === "audio" && m.file_url) {
       bubble.classList.add("media");
-      const au = document.createElement("audio"); au.className = "chat-audio"; au.controls = true; au.src = m.file_url;
+      const au = document.createElement("audio"); au.className = "chat-audio"; au.controls = true;
       bubble.appendChild(au);
+      signedUrl(m.file_url).then(u => { if (u) au.src = u; });
     } else if (m.type === "file" && m.file_url) {
-      const a = document.createElement("a"); a.className = "chat-file"; a.href = m.file_url; a.target = "_blank"; a.rel = "noopener";
+      const a = document.createElement("a"); a.className = "chat-file"; a.target = "_blank"; a.rel = "noopener";
       a.textContent = "📎 " + (m.file_name || "fichier");
       bubble.appendChild(a);
+      signedUrl(m.file_url).then(u => { if (u) a.href = u; });
     } else {
       bubble.textContent = m.content || "";
     }
@@ -595,12 +598,27 @@
     if (f) await sendFile(f);
   });
 
+  // Bucket privé : on renvoie le CHEMIN du fichier (et non une URL publique).
+  // L'affichage génère une URL signée temporaire à la demande (voir signedUrl).
   async function uploadToBucket(blob, filename) {
     const ext = (String(filename).split(".").pop() || "bin").toLowerCase();
     const path = currentGroup.id + "/" + Date.now() + "_" + Math.random().toString(36).slice(2, 8) + "." + ext;
     const { error } = await sb.storage.from("chat-files").upload(path, blob, { contentType: blob.type || undefined });
     if (error) throw error;
-    return sb.storage.from("chat-files").getPublicUrl(path).data.publicUrl;
+    return path;
+  }
+
+  // Génère une URL signée (valable 1h) pour lire un fichier du bucket privé.
+  // Gère aussi les anciens enregistrements qui stockaient une URL publique complète.
+  async function signedUrl(ref) {
+    if (!ref) return "";
+    let path = String(ref);
+    const marker = "/chat-files/";
+    const i = path.indexOf(marker);
+    if (i !== -1) path = path.slice(i + marker.length).split("?")[0];
+    try { path = decodeURIComponent(path); } catch (e) {}
+    const { data } = await sb.storage.from("chat-files").createSignedUrl(path, 3600);
+    return (data && data.signedUrl) || "";
   }
 
   async function sendFile(file) {
