@@ -1,43 +1,88 @@
-// Serveur du salon : sert le client, relaie la signalisation WebRTC (voix + écran)
-// et les messages du chat texte. Aucune donnée n'est stockée durablement.
+// Serveur du salon : sert le client, relaie la signalisation WebRTC (voix + ecran)
+// et les messages du chat texte. Aucune donnee n'est stockee durablement.
 
 const express = require('express');
 const http = require('http');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { Server } = require('socket.io');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+
+// Limite la taille des messages temps reel (anti-DoS : 100 Ko max par trame).
+const io = new Server(server, { maxHttpBufferSize: 1e5 });
 
 const PORT = process.env.PORT || 3000;
 
+// Render place l'app derriere un proxy : necessaire pour HTTPS + limites par IP.
+app.set('trust proxy', 1);
+
+// --- En-tetes de securite (Helmet) ---
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:", "https://flagcdn.com", "https://*.supabase.co"],
+      mediaSrc: ["'self'", "blob:", "https://*.supabase.co"],
+      connectSrc: [
+        "'self'",
+        "https://*.supabase.co", "wss://*.supabase.co",
+        "https://cdn.jsdelivr.net",
+        "wss://partage-ecran.onrender.com", "ws://partage-ecran.onrender.com"
+      ],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameSrc: ["'self'"],
+      frameAncestors: ["'self'"],
+      upgradeInsecureRequests: []
+    }
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
 // --- Inscription pseudo + mot de passe, sans email ---
-// Le serveur crée les comptes déjà confirmés via la clé service Supabase.
-// La clé secrète est lue depuis l'environnement (jamais en clair dans le code).
 const SUPA_URL = process.env.SUPABASE_URL || 'https://pukzfqdfkvojwznxqqme.supabase.co';
 const SUPA_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
-const EMAIL_DOMAIN = 'tslive.app'; // domaine interne (aucun email n'est envoyé)
+const EMAIL_DOMAIN = 'tslive.app';
 const admin = SUPA_SERVICE_KEY
   ? createClient(SUPA_URL, SUPA_SERVICE_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
   : null;
 
-// Normalise un pseudo en identifiant d'email interne (doit être identique côté client)
 function emailFromUsername(u) {
   const clean = String(u || '').trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
   return clean ? clean + '@' + EMAIL_DOMAIN : '';
 }
 
-app.use(express.json());
+// Corps JSON limite a 16 Ko.
+app.use(express.json({ limit: '16kb' }));
 
-app.post('/api/register', async (req, res) => {
-  if (!admin) return res.status(503).json({ error: "Inscription pas encore configurée sur le serveur." });
+// Anti-spam sur la creation de comptes : 12 tentatives / heure / IP.
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 12,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Trop de tentatives d'inscription. Reessayez dans une heure." }
+});
+
+app.post('/api/register', registerLimiter, async (req, res) => {
+  if (!admin) return res.status(503).json({ error: "Inscription pas encore configuree sur le serveur." });
   const { username, password } = req.body || {};
   const name = String(username || '').trim();
   const email = emailFromUsername(name);
   if (!email) return res.status(400).json({ error: "Pseudo invalide (lettres, chiffres, . _ - )." });
-  if (!password || String(password).length < 6) return res.status(400).json({ error: "Mot de passe : 6 caractères minimum." });
+  if (name.length > 40) return res.status(400).json({ error: "Pseudo trop long (40 caracteres max)." });
+  if (!password || String(password).length < 6) return res.status(400).json({ error: "Mot de passe : 6 caracteres minimum." });
+  if (String(password).length > 200) return res.status(400).json({ error: "Mot de passe trop long." });
   try {
     const { error } = await admin.auth.admin.createUser({
       email,
@@ -47,7 +92,7 @@ app.post('/api/register', async (req, res) => {
     });
     if (error) {
       const taken = /already|exists|registered|duplicate/i.test(error.message);
-      return res.status(taken ? 409 : 400).json({ error: taken ? "Ce pseudo est déjà pris." : error.message });
+      return res.status(taken ? 409 : 400).json({ error: taken ? "Ce pseudo est deja pris." : error.message });
     }
     res.json({ ok: true });
   } catch (e) {
@@ -55,75 +100,78 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Accueil = coquille de l'app (Discord-like). L'app de streaming reste
-// accessible en /index.html (affichée dans un cadre intégré).
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'home.html')));
 app.use(express.static(__dirname, { index: false }));
 
+// --- Garde-fou anti-flood par socket ---
+function makeBucket(maxEvents, windowMs) {
+  let hits = [];
+  return function allow() {
+    const now = Date.now();
+    hits = hits.filter(t => now - t < windowMs);
+    if (hits.length >= maxEvents) return false;
+    hits.push(now);
+    return true;
+  };
+}
+
 io.on('connection', (socket) => {
   let currentRoom = null;
+  const chatBucket = makeBucket(20, 10000);
+  const signalBucket = makeBucket(400, 10000);
 
-  // Rejoindre un salon
   socket.on('join', ({ roomId, name } = {}) => {
-    roomId = String(roomId || '').trim();
+    roomId = String(roomId || '').trim().slice(0, 80);
     if (!roomId) return;
-
-    const displayName = (name && String(name).trim().slice(0, 40)) || 'Invité';
+    const displayName = (name && String(name).trim().slice(0, 40)) || 'Invite';
     socket.data.name = displayName;
     currentRoom = roomId;
     socket.join(roomId);
-
-    // Liste des pairs déjà présents (avec leur nom)
     const peers = [];
     const room = io.sockets.adapter.rooms.get(roomId);
     if (room) {
       for (const id of room) {
         if (id === socket.id) continue;
         const s = io.sockets.sockets.get(id);
-        peers.push({ id, name: (s && s.data && s.data.name) || 'Invité' });
+        peers.push({ id, name: (s && s.data && s.data.name) || 'Invite' });
       }
     }
-
     socket.emit('joined', { roomId, selfId: socket.id, peers });
     socket.to(roomId).emit('peer-joined', { peerId: socket.id, name: displayName });
-    console.log(`[join] ${displayName} (${socket.id}) -> ${roomId}`);
+    console.log('[join] ' + displayName + ' (' + socket.id + ') -> ' + roomId);
   });
 
-  // Relais de signalisation WebRTC (perfect negotiation : description ou candidate)
-  // payload = { to: <socketId>, data: { description } | { candidate } }
-  socket.on('signal', ({ to, data }) => {
-    if (!to) return;
+  socket.on('signal', ({ to, data } = {}) => {
+    if (!to || !currentRoom || !signalBucket()) return;
+    const dest = io.sockets.sockets.get(to);
+    if (!dest || !dest.rooms.has(currentRoom)) return;
     io.to(to).emit('signal', { from: socket.id, data });
   });
 
-  // Message du chat texte : diffusé aux autres membres du salon
   socket.on('chat', ({ text } = {}) => {
+    if (!currentRoom || !chatBucket()) return;
     text = String(text || '').slice(0, 2000);
-    if (!text.trim() || !currentRoom) return;
+    if (!text.trim()) return;
     socket.to(currentRoom).emit('chat', {
       from: socket.id,
-      name: socket.data.name || 'Invité',
+      name: socket.data.name || 'Invite',
       text,
       ts: Date.now()
     });
   });
 
-  // L'émetteur a arrêté son partage d'écran
   socket.on('stop-share', () => {
     if (currentRoom) socket.to(currentRoom).emit('share-stopped', { peerId: socket.id });
   });
 
   socket.on('disconnect', () => {
     if (currentRoom) {
-      socket.to(currentRoom).emit('peer-left', {
-        peerId: socket.id,
-        name: socket.data.name || 'Invité'
-      });
+      socket.to(currentRoom).emit('peer-left', { peerId: socket.id, name: socket.data.name || 'Invite' });
     }
-    console.log(`[disconnect] ${socket.id}`);
+    console.log('[disconnect] ' + socket.id);
   });
 });
 
 server.listen(PORT, () => {
-  console.log(`Serveur de partage d'écran sur http://localhost:${PORT}`);
+  console.log('Serveur de partage d ecran sur http://localhost:' + PORT);
 });

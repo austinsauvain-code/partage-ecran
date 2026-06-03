@@ -372,8 +372,9 @@
         <p class="hero-sub">Créez un salon, envoyez le lien à vos amis, et suivez le match ensemble comme sur le même canapé. Chacun voit l'écran, parle au micro et réagit dans le chat.</p>
         <div class="hero-form">
           <input id="name-input" placeholder="Votre nom (ex : Martin)" autocomplete="off" maxlength="40" />
-          <input id="room-input" placeholder="Nom du salon (ex : reunion-mardi)" autocomplete="off" />
+          <input id="room-input" placeholder="Code du salon (ou cliquez sur Créer)" autocomplete="off" />
           <button class="btn-primary btn-block" id="join-btn">Entrer dans le salon →</button>
+          <button class="btn-ghost btn-block" id="new-room-btn" type="button">Créer un salon privé</button>
         </div>
         <div class="hero-features">
           <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-3px;margin-right:7px"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Partage d'écran</span>
@@ -583,6 +584,22 @@
   joinBtn.addEventListener("click", join);
   roomInput.addEventListener("keydown", (e) => { if (e.key === "Enter") join(); });
   nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") roomInput.focus(); });
+
+  // ===== Salon privé à code aléatoire (non devinable) =====
+  // 16 caractères tirés au sort de façon cryptographique -> impossible à deviner.
+  function genRoomId() {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    const buf = new Uint32Array(16);
+    (window.crypto || window.msCrypto).getRandomValues(buf);
+    let id = "";
+    for (let i = 0; i < buf.length; i++) id += chars[buf[i] % chars.length];
+    return id;
+  }
+  const newRoomBtn = $("new-room-btn");
+  if (newRoomBtn) newRoomBtn.addEventListener("click", () => {
+    roomInput.value = genRoomId();
+    join();
+  });
 
   socket.on("joined", ({ selfId: id, peers: existing }) => {
     selfId = id;
