@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Coupe du Monde 2026 — Calendrier</title>
+<style>
+  :root{
+    --bg:#0a0a0b; --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.16);
+    --txt:#f4f5f4; --muted:#8b908d; --dim:#5f6562; --accent:#3fe0aa; --gold:#e7c98a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:"Helvetica Neue",Arial,"Segoe UI",sans-serif;color:var(--txt);min-height:100vh;background:var(--bg);-webkit-font-smoothing:antialiased;letter-spacing:.2px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 40px 90px;}
+  .topbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-bottom:24px;}
+  .brand{font-weight:700;letter-spacing:4px;font-size:11px;color:var(--muted);text-transform:uppercase;}
+  .brand b{color:var(--accent);}
+  .spacer{flex:1;}
+  .chips{display:flex;}
+  .chip{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:4px 16px;border-left:1px solid var(--line);}
+  .chip:first-child{border-left:0;}
+  .chip b{color:var(--txt);}
+  h1.title{font-size:clamp(40px,7vw,78px);font-weight:800;letter-spacing:-1.5px;line-height:.95;margin:6px 0 30px;text-transform:uppercase;}
+  h1.title span{color:var(--accent);}
+  .tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:34px;}
+  .tab{background:none;border:none;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:16px 22px;cursor:pointer;position:relative;}
+  .tab:hover{color:var(--txt);}
+  .tab.active{color:var(--txt);}
+  .tab.active::after{content:"";position:absolute;left:22px;right:22px;bottom:-1px;height:2px;background:var(--accent);}
+  .view{display:none;animation:fade .35s ease;}
+  .view.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  /* Calendrier */
+  .day{margin-bottom:30px;}
+  .day-h{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:6px;}
+  .match{display:flex;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid var(--line);}
+  .mgrp{flex:none;width:54px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);border:1px solid var(--line);padding:4px 0;text-align:center;}
+  .mteams{flex:1;display:flex;align-items:center;gap:12px;font-size:15px;min-width:0;}
+  .mteams .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mteams .t.away{text-align:right;}
+  .mteams .vs{flex:none;color:var(--dim);font-size:11px;letter-spacing:1px;}
+  .flag{width:24px;height:18px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(255,255,255,.16);vertical-align:-4px;flex:none;}
+  .mteams .t .flag{margin-right:9px;}
+  .mteams .t.away .flag{margin-right:0;margin-left:9px;}
+  .grp td.tl .flag{margin-right:9px;width:20px;height:15px;vertical-align:-2px;}
+  .phase{border:1px solid var(--line);padding:18px 20px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;}
+  .phase .pn{font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+  .phase .pd{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);}
+  .phase .ps{font-size:12px;color:var(--muted);width:100%;}
+  .sec-h{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin:38px 0 16px;}
+  /* Groupes */
+  .grp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+  .grp{border:1px solid var(--line);padding:18px;}
+  .grp h3{margin:0 0 14px;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);text-align:center;padding:0 0 8px;font-weight:600;}
+  th.tl,td.tl{text-align:left;}
+  td{padding:7px 0;border-top:1px solid var(--line);text-align:center;color:var(--muted);}
+  td.tl{color:var(--txt);}
+  .footer{margin-top:50px;padding-top:24px;border-top:1px solid var(--line);font-size:10px;letter-spacing:1px;color:var(--dim);line-height:1.7;}
+  @media(max-width:860px){.wrap{padding:28px 20px 70px;}.grp-grid{grid-template-columns:1fr;}}
+  @media(max-width:560px){.mteams{font-size:13px;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">TS Live · <b>Calendrier</b></div>
+    <div class="spacer"></div>
+    <div class="chips"><div class="chip">48 équipes</div><div class="chip">12 groupes</div><div class="chip"><b>104</b> matchs</div></div>
+  </div>
+  <h1 class="title">Coupe du Monde <span>2026</span></h1>
+
+  <div class="tabs">
+    <button class="tab active" data-t="cal">Calendrier</button>
+    <button class="tab" data-t="grp">Groupes</button>
+  </div>
+
+  <section class="view active" id="cal">
+    <div id="calBody"></div>
+    <div class="sec-h">Phase finale</div>
+    <div id="koBody"></div>
+  </section>
+
+  <section class="view" id="grp">
+    <div class="grp-grid" id="grpBody"></div>
+  </section>
+
+  <div class="footer">
+    Calendrier officiel de la Coupe du Monde 2026 (11 juin – 19 juillet, USA · Canada · Mexique). Source : calendrier FIFA / Wikipédia.
+    Heures de coup d'envoi non affichées. Classements à 0 tant que le tournoi n'a pas commencé.
+  </div>
+</div>
+
+<script>
+  // [nom, code ISO pour le drapeau]
+  const GROUPS = {
+    A:[["Mexique","mx"],["Afrique du Sud","za"],["Corée du Sud","kr"],["Tchéquie","cz"]],
+    B:[["Canada","ca"],["Bosnie-Herzégovine","ba"],["Qatar","qa"],["Suisse","ch"]],
+    C:[["Brésil","br"],["Maroc","ma"],["Haïti","ht"],["Écosse","gb-sct"]],
+    D:[["États-Unis","us"],["Paraguay","py"],["Australie","au"],["Turquie","tr"]],
+    E:[["Allemagne","de"],["Curaçao","cw"],["Côte d'Ivoire","ci"],["Équateur","ec"]],
+    F:[["Pays-Bas","nl"],["Japon","jp"],["Suède","se"],["Tunisie","tn"]],
+    G:[["Belgique","be"],["Égypte","eg"],["Iran","ir"],["Nouvelle-Zélande","nz"]],
+    H:[["Espagne","es"],["Cap-Vert","cv"],["Arabie saoudite","sa"],["Uruguay","uy"]],
+    I:[["France","fr"],["Sénégal","sn"],["Irak","iq"],["Norvège","no"]],
+    J:[["Argentine","ar"],["Algérie","dz"],["Autriche","at"],["Jordanie","jo"]],
+    K:[["Portugal","pt"],["RD Congo","cd"],["Ouzbékistan","uz"],["Colombie","co"]],
+    L:[["Angleterre","gb-eng"],["Croatie","hr"],["Ghana","gh"],["Panama","pa"]]
+  };
+  function flag(code){ return `<img class="flag" src="https://flagcdn.com/40x30/${code}.png" srcset="https://flagcdn.com/80x60/${code}.png 2x" alt="" loading="lazy">`; }
+  // jours de juin pour [J1m1, J1m2, J2m1, J2m2, J3m1, J3m2]
+  const DATES = {
+    A:[11,11,18,18,24,24], B:[12,13,18,18,24,24], C:[13,13,19,19,24,24],
+    D:[12,13,19,19,25,25], E:[14,14,20,20,25,25], F:[14,14,20,20,25,25],
+    G:[15,15,21,21,26,26], H:[15,15,21,21,26,26], I:[16,16,22,22,26,26],
+    J:[16,16,22,22,27,27], K:[17,17,23,23,27,27], L:[17,17,23,23,27,27]
+  };
+  // schéma officiel des affrontements (indices d'équipe)
+  const PAIR = [[0,1],[2,3],[0,2],[3,1],[3,0],[1,2]];
+
+  const matches = [];
+  for (const g in GROUPS){
+    const t = GROUPS[g], d = DATES[g];
+    PAIR.forEach((p, i) => matches.push({ day:d[i], g, h:t[p[0]], a:t[p[1]] }));
+  }
+  matches.sort((x,y)=>x.day-y.day);
+
+  // Rendu calendrier par date
+  const calBody = document.getElementById("calBody");
+  let curDay = null, dayEl = null;
+  matches.forEach(m=>{
+    if (m.day !== curDay){
+      curDay = m.day;
+      dayEl = document.createElement("div");
+      dayEl.className = "day";
+      dayEl.innerHTML = `<div class="day-h">${m.day} juin 2026</div>`;
+      calBody.appendChild(dayEl);
+    }
+    const row = document.createElement("div");
+    row.className = "match";
+    row.innerHTML = `<span class="mgrp">Gr. ${m.g}</span><div class="mteams"><span class="t">${flag(m.h[1])}${m.h[0]}</span><span class="vs">VS</span><span class="t away">${m.a[0]}${flag(m.a[1])}</span></div>`;
+    dayEl.appendChild(row);
+  });
+
+  // Phase finale (dates officielles, équipes à déterminer)
+  const KO = [
+    ["Barrages (32es)","28 juin – 3 juillet"],
+    ["Huitièmes de finale","4 – 7 juillet"],
+    ["Quarts de finale","9 – 11 juillet"],
+    ["Demi-finales","14 – 15 juillet"],
+    ["Match pour la 3e place","18 juillet"],
+    ["Finale","19 juillet · New York / New Jersey"]
+  ];
+  document.getElementById("koBody").innerHTML = KO.map(k=>
+    `<div class="phase"><span class="pn">${k[0]}</span><span class="pd">${k[1]}</span><span class="ps">Équipes à déterminer à l'issue de la phase de groupes.</span></div>`
+  ).join("");
+
+  // Rendu groupes (classement à 0)
+  document.getElementById("grpBody").innerHTML = Object.keys(GROUPS).map(g=>{
+    const rows = GROUPS[g].map(t=>
+      `<tr><td class="tl">${flag(t[1])}${t[0]}</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>`
+    ).join("");
+    return `<div class="grp"><h3>Groupe ${g}</h3><table>
+      <tr><th class="tl">Équipe</th><th>J</th><th>G</th><th>N</th><th>P</th><th>Pts</th></tr>
+      ${rows}</table></div>`;
+  }).join("");
+
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.onclick=()=>{
+      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+      document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+      t.classList.add("active");
+      document.getElementById(t.dataset.t).classList.add("active");
+    };
+  });
+</script>
+</body>
+</html>
